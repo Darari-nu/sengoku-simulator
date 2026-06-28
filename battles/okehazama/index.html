@@ -2,54 +2,209 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>桶狭間の戦い 予告 - 戦国合戦 3D絵巻</title>
-  <meta name="description" content="桶狭間の戦いを3D俯瞰絵巻として制作予定。豪雨、狭隘地形、織田信長の奇襲を番組予告風に紹介します。">
-  <meta property="og:title" content="桶狭間の戦い 予告">
-  <meta property="og:description" content="豪雨と地形を利用した奇襲を3D俯瞰絵巻で制作予定。">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>決戦 桶狭間 ― 3D俯瞰絵巻</title>
+  <meta name="description" content="桶狭間の戦いを3D俯瞰絵巻で体験。豪雨、狭隘地形、織田信長の奇襲を時刻スライダーで追える合戦シミュレーター。">
+  <meta property="og:title" content="決戦 桶狭間 ― 3D俯瞰絵巻">
+  <meta property="og:description" content="今川の大軍と織田の奇襲を3D俯瞰で体験する桶狭間シミュレーター。">
   <meta property="og:image" content="../../assets/ogp/sengoku-ogp.svg">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../styles/index.css">
+  <link rel="stylesheet" href="../../styles/battle-sim.css">
 </head>
 <body>
-  <header class="site-header">
-    <a class="brand" href="../../" aria-label="戦国合戦 3D絵巻 ホーム">
-      <span class="brand-mark">3D</span>
-      <span>
-        <strong>戦国合戦 3D絵巻</strong>
-        <small>制作中予告</small>
-      </span>
-    </a>
-    <nav class="site-nav" aria-label="主要ナビゲーション">
-      <a href="../../">合戦一覧</a>
-      <a href="../sekigahara/">関ヶ原を見る</a>
-    </nav>
-  </header>
+  <div id="stage"></div>
+  <a id="homeLink" href="../../">合戦一覧</a>
 
-  <main class="preview-main">
-    <section class="preview-panel">
-      <p class="eyebrow">第弐回 制作中</p>
-      <h1>桶狭間の戦い</h1>
-      <p class="lead">今川の大軍、尾張の谷筋、急変する空。少数の織田勢が豪雨のなかで進路を変え、義元本陣へ迫る一瞬を3D化します。</p>
-      <ul class="preview-list">
-        <li>見どころ: 今川本隊の進軍と休息</li>
-        <li>見どころ: 豪雨で視界が閉じる演出</li>
-        <li>見どころ: 谷筋を抜ける織田軍の奇襲線</li>
-      </ul>
-      <a class="back-link" href="../../">合戦一覧へ戻る</a>
-    </section>
-
-    <div class="battle-visual okehazama" aria-label="桶狭間の予告ビジュアル">
-      <span class="ridge ridge-a"></span>
-      <span class="ridge ridge-b"></span>
-      <span class="route-line"></span>
-      <span class="unit east"></span>
-      <span class="unit west"></span>
-      <span class="unit key"></span>
+  <div id="titleBox">
+    <div class="logo">
+      <div class="eyebrow" id="battleEyebrow"></div>
+      <h1 id="battleTitle"></h1>
     </div>
-  </main>
+    <div id="clockBox">
+      <div class="date" id="clockDate"></div>
+      <div class="time" id="clockTime"></div>
+      <div class="wakoku" id="clockWakoku"></div>
+    </div>
+  </div>
+
+  <div id="compass"><div id="compassNeedle">北</div></div>
+
+  <div id="infoCard">
+    <div class="nm" id="infoName"></div>
+    <div class="meta" id="infoMeta"></div>
+    <div class="note" id="infoNote"></div>
+  </div>
+
+  <div id="hint">ドラッグで回転 ／ ホイール・ピンチで拡大</div>
+  <div id="caption"><div class="cap-title" id="capTitle"></div><div class="cap-body" id="capBody"></div></div>
+  <div id="viewStrip"></div>
+
+  <div id="timeline">
+    <button id="playBtn" aria-label="再生/停止">▮▮</button>
+    <button id="speedBtn">x1</button>
+    <div id="trackWrap">
+      <div id="fillBar"></div>
+      <input id="track" type="range">
+      <div id="hourLabels"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    window.BATTLE_SCENE = {
+      title: "決戦 桶狭間",
+      eyebrow: "豪雨奇襲",
+      dateLabel: "永禄三年 五月十九日",
+      time: {
+        min: 11,
+        max: 15,
+        step: 0.005,
+        speeds: [0.075, 0.15, 0.3],
+        speedLabels: ["x1", "x2", "x4"],
+        wakoku: [[11, "午の刻"], [13, "未の刻"], [15, "申の刻"]]
+      },
+      sky: {
+        morning: 0x90a7ad,
+        noon: 0x6f8589,
+        fog: 0xd7dde0,
+        clearFog: 0xb8c5c9,
+        fogDensity: 0.0018,
+        fogBoost: 0.011,
+        dayLength: 2.2
+      },
+      camera: {
+        center: [-35, 12, -8],
+        focus: [10, 18],
+        az: -2.28,
+        polar: 1.02,
+        radius: 430,
+        autoPolar: 0.96,
+        autoRadius: 252
+      },
+      terrain: {
+        size: 760,
+        segments: 158,
+        base: 2,
+        roughX: 0.04,
+        roughZ: 0.045,
+        roughAmp: 2.4,
+        longAmp: 2.6,
+        colors: {
+          low: 0x6f7f4d,
+          mid: 0x496a3d,
+          high: 0x31492f,
+          road: 0xc6b383,
+          water: 0x4e6f80
+        },
+        bumps: [
+          { x: -145, z: -120, r: 90, amp: 42 },
+          { x: -65, z: -65, r: 95, amp: 31 },
+          { x: 35, z: 110, r: 120, amp: 28 },
+          { x: 145, z: -95, r: 150, amp: 32 },
+          { x: 210, z: 95, r: 130, amp: 40 }
+        ],
+        roads: [
+          { width: 9, points: [[-280, -36], [-150, -20], [-34, 5], [68, 24], [230, 36]] },
+          { width: 6, points: [[-230, -135], [-165, -108], [-105, -72], [-48, -32], [30, 14]] }
+        ],
+        rivers: [
+          { width: 12, points: [[-250, 118], [-115, 92], [40, 86], [205, 126]] }
+        ]
+      },
+      sides: {
+        oda: { label: "織田軍", color: 0xd9a441, labelColor: "#ffd98a", flagBg: "#1b1b1b", flagStripe: "#d9a441", flagText: "#e8d9b0" },
+        imagawa: { label: "今川軍", color: 0x7fa6d4, labelColor: "#cfe2ff", flagBg: "#f4f1e6", flagStripe: "#7fa6d4", flagText: "#222" },
+        neutral: { label: "周辺部隊", color: 0xb9c4cf, labelColor: "#e8eef2", flagBg: "#65717a", flagStripe: "#b9c4cf", flagText: "#111" }
+      },
+      places: [
+        { name: "善照寺砦", x: -190, z: -132 },
+        { name: "桶狭間山", x: -70, z: -70 },
+        { name: "田楽狭間", x: 42, z: 18 },
+        { name: "沓掛城", x: 165, z: 24 },
+        { name: "大高城", x: 190, z: -105, scale: 8, opacity: 0.75 }
+      ],
+      units: [
+        {
+          id: "nobunaga",
+          name: "織田信長",
+          side: "oda",
+          men: "約2,000",
+          note: "善照寺砦から機を見て前進。豪雨に乗じ、今川本陣へ一気に迫る。",
+          path: [[11, -205, -126], [12.2, -170, -106], [13.2, -112, -74], [13.75, -56, -28], [14.25, 24, 14], [15, 44, 18]],
+          size: 42,
+          initialFacing: [1, 0.2]
+        },
+        {
+          id: "oda_vanguard",
+          name: "織田先鋒",
+          side: "oda",
+          men: "約1,000",
+          note: "谷筋を進み、雨と地形を盾にして今川本陣の側面へ回り込む。",
+          path: [[11, -230, -94], [12.6, -160, -80], [13.45, -84, -42], [14.1, 12, 2], [15, 58, 36]],
+          size: 28,
+          initialFacing: [1, 0.2]
+        },
+        {
+          id: "yoshimoto",
+          name: "今川義元",
+          side: "imagawa",
+          men: "約5,000",
+          note: "田楽狭間で休息中の本陣。奇襲を受けて混乱し、短時間で崩れる。",
+          path: [[11, 48, 18], [13.65, 48, 18], [14.25, 54, 20], [15, 62, 28]],
+          fade: [14.22, 14.7],
+          size: 62,
+          initialFacing: [-1, 0]
+        },
+        {
+          id: "imagawa_main",
+          name: "今川本隊",
+          side: "imagawa",
+          men: "約20,000",
+          note: "大軍で尾張へ進むが、隊列が伸び、豪雨で連絡が乱れる。",
+          path: [[11, 170, 20], [12.2, 104, 14], [13.2, 70, 26], [14.25, 94, 78], [15, 122, 120]],
+          fade: [14.3, 15],
+          size: 78,
+          initialFacing: [-1, 0]
+        },
+        {
+          id: "matsudaira",
+          name: "松平元康",
+          side: "neutral",
+          men: "約1,000",
+          note: "今川方として大高城周辺にあり、主戦場から離れて動きが限定される。",
+          path: [[11, 190, -112], [15, 190, -112]],
+          size: 22,
+          initialFacing: [-1, 0]
+        }
+      ],
+      arrows: [
+        { t0: 11.1, t1: 12.6, from: [170, 20], to: [56, 18], color: 0x9fc5f0, head: 18, width: 11 },
+        { t0: 13.2, t1: 14.35, from: [-190, -112], to: [46, 18], color: 0xffd35c, head: 22, width: 14 },
+        { t0: 14.2, t1: 15.0, from: [58, 26], to: [126, 118], color: 0x9fc5f0, head: 16, width: 10 }
+      ],
+      captions: [
+        { t: 11.0, title: "進軍", body: "今川の大軍、尾張へ進む。隊列は街道に長く伸びる", focus: [95, 18], duration: 0.72 },
+        { t: 12.0, title: "休息", body: "義元本陣、田楽狭間で一息。織田勢は砦で機を待つ", focus: [30, 16], duration: 0.72 },
+        { t: 13.15, title: "豪雨", body: "空が崩れる。雨音と視界の悪化が、奇襲の覆いとなる", focus: [-78, -58], duration: 0.82 },
+        { t: 13.65, title: "急襲", body: "信長隊、谷筋を抜けて今川本陣へ殺到", focus: [-18, -8], duration: 0.78 },
+        { t: 14.22, title: "本陣崩壊", body: "義元本陣、混乱。大軍の優位は一瞬で失われる", focus: [52, 18], duration: 0.84 },
+        { t: 14.65, title: "決着", body: "今川義元討死。尾張の小勢が東海の大軍を破る", focus: [70, 38], duration: 0.78 }
+      ],
+      weather: {
+        fogCount: 10,
+        fogSize: 250,
+        fogPeak: time => Math.max(
+          Math.max(0, Math.min(1, (11.8 - time) / 0.8)) * 0.22,
+          Math.max(0, Math.min(1, (time - 13.0) / 0.35)) * Math.max(0, Math.min(1, (14.35 - time) / 0.45))
+        ),
+        rain: { start: 13.05, end: 14.25, drops: 280, opacity: 0.56, color: 0xcfe0ef }
+      },
+      captionDuration: 0.78
+    };
+  </script>
+  <script src="../../scripts/battle-sim.js"></script>
 </body>
 </html>

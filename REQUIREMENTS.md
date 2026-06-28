@@ -19,7 +19,7 @@
 | 最終ゴール | 「合戦コレクション」として継続的に作品が増えるサイトに育てる |
 | 収益モデル | なし（趣味/技術発信ポートフォリオ） |
 | 運用者 | darari（個人） |
-| 初期リリース範囲 | トップ + 関ヶ原（完成済みコード移設） + 桶狭間/川中島（番組予告風の準備中） |
+| 初期リリース範囲 | トップ + 関ヶ原/桶狭間/川中島の3D俯瞰シミュレーター |
 
 ---
 
@@ -29,8 +29,8 @@
 |---|---|---|
 | トップ | `/` | 合戦一覧（番組表風）。サイトの入口 |
 | 関ヶ原 | `/battles/sekigahara/` | 3D俯瞰シミュレーター（完成済みコード移設） |
-| 桶狭間 | `/battles/okehazama/` | 番組予告風の準備中ページ |
-| 川中島 | `/battles/kawanakajima/` | 番組予告風の準備中ページ |
+| 桶狭間 | `/battles/okehazama/` | 3D俯瞰シミュレーター |
+| 川中島 | `/battles/kawanakajima/` | 3D俯瞰シミュレーター |
 | 404 | `/404.html` | 戻り導線つきエラーページ |
 | About | `/about/` | Phase 2で追加（Phase 1ではフッターリンクのみ） |
 
@@ -58,8 +58,8 @@
 ├─ 404.html                        ← エラーページ
 ├─ battles/
 │  ├─ sekigahara/index.html        ← 関ヶ原完成版（今後の核）
-│  ├─ okehazama/index.html         ← 番組予告風の準備中
-│  └─ kawanakajima/index.html      ← 番組予告風の準備中
+│  ├─ okehazama/index.html         ← 桶狭間3D俯瞰シミュレーター
+│  └─ kawanakajima/index.html      ← 川中島3D俯瞰シミュレーター
 ├─ assets/
 │  ├─ ogp/                         ← OGP画像
 │  └─ previews/                    ← カード用プレビュー画像
@@ -97,8 +97,8 @@
 2. **注目枠（今週の合戦）**: 関ヶ原を大きく表示
 3. **番組表風コレクション**:
    - 公開中: 関ヶ原の戦い
-   - 制作中: 桶狭間の戦い
-   - 制作中: 川中島の戦い
+   - 公開中: 桶狭間の戦い
+   - 公開中: 川中島の戦い
 4. **フッター**: 制作者 / 参考資料 / 史実注記
 
 ### 合戦カードに表示する情報
@@ -148,8 +148,8 @@
 | 合戦 | 状態 | 表現テーマ |
 |---|---|---|
 | 関ヶ原の戦い | 完成済みコード移設 | 大規模布陣、裏切り、総崩れ |
-| 桶狭間の戦い | 準備中 | 奇襲、豪雨、狭隘地形 |
-| 川中島の戦い | 準備中 | 霧、別働隊、八幡原の激突 |
+| 桶狭間の戦い | 公開中 | 奇襲、豪雨、狭隘地形 |
+| 川中島の戦い | 公開中 | 霧、別働隊、八幡原の激突 |
 
 ### 次期候補
 
@@ -225,14 +225,14 @@
 | サイト名 | 「戦国合戦 3D絵巻」で確定 |
 | About | Phase 1ではフッターリンクのみ。本文はPhase 2 |
 | GA4 | Phase 1では入れない（プライバシーポリシー追加の手間回避） |
-| 準備中ページ | 「Coming Soon」だけでなく**番組予告風カード**で見せる |
+| 準備中ページ | 今後の追加合戦では「Coming Soon」だけでなく**番組予告風カード**で見せる |
 
 ---
 
 # 実装手順書（Phase 1）
 
 ## 目標
-トップから関ヶ原に遷移できる + 番組予告風の準備中ページが見える状態をGitHub Pagesで公開。
+トップから関ヶ原・桶狭間・川中島の3D合戦ページに遷移できる状態をGitHub Pagesで公開。
 
 ## ステップ（Codex実行用bashコマンド）
 
@@ -251,7 +251,7 @@ touch .nojekyll
 # 3. 完成済み関ヶ原ページを配置
 # battles/sekigahara/index.html を核として保持
 
-# 4. トップ・CSS・データ・準備中・404を生成
+# 4. トップ・CSS・データ・3D合戦ページ・404を生成
 # → 下記HTML生成プロンプトに従いCodex @Product Designで実装
 
 # 5. ローカル確認
@@ -269,7 +269,7 @@ python3 -m http.server 8000
 find . -maxdepth 3 -type f | sort
 git status --short
 git add -A
-git commit -m "feat: 多合戦サイト Phase 1 - トップ＋関ヶ原移設＋準備中ページ"
+git commit -m "feat: 多合戦サイト Phase 1 - 三合戦3Dページ"
 git push origin main
 ```
 
@@ -282,8 +282,8 @@ git push origin main
 - index.html（トップ）
 - styles/index.css
 - data/battles-index.js
-- battles/okehazama/index.html（番組予告風の準備中）
-- battles/kawanakajima/index.html（番組予告風の準備中）
+- battles/okehazama/index.html（3D俯瞰シミュレーター）
+- battles/kawanakajima/index.html（3D俯瞰シミュレーター）
 - 404.html
 
 条件:
@@ -295,9 +295,9 @@ git push origin main
 - index.html は ./styles/index.css と ./data/battles-index.js を読み込む
 - data/battles-index.js は window.BATTLES = [...] として定義
 - 関ヶ原カードは ./battles/sekigahara/ に遷移
-- 桶狭間/川中島カードは準備中ページへ遷移
+- 桶狭間/川中島カードは3D合戦ページへ遷移
 - カードには、合戦名、年号/西暦、場所、主要人物、見どころ、地形/戦術タグ、公開状態を表示
-- 準備中ページは番組予告風（Coming Soon単独はNG）
+- 今後の準備中ページは番組予告風（Coming Soon単独はNG）
 - すべてのリンクはGitHub Pagesのサブパスで壊れない相対パスにする
 - meta description、OGP基本タグ（og:title, og:description, og:image, twitter:card）
 - aria-label、十分なタップ領域（44x44px以上）
@@ -309,7 +309,7 @@ git push origin main
 
 - [ ] https://darari-nu.github.io/sengoku-simulator/ がトップとして表示される
 - [ ] 関ヶ原カードから https://darari-nu.github.io/sengoku-simulator/battles/sekigahara/ に遷移できる
-- [ ] 桶狭間/川中島の番組予告ページが表示される
+- [ ] 桶狭間/川中島の3D合戦ページが表示される
 - [ ] 404.html がトップへの戻り導線とともに表示される
 - [ ] モバイル表示が破綻していない
 - [ ] OGPタグがセットされている

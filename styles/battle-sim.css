@@ -1,0 +1,458 @@
+:root {
+  --ink: #0a0d11;
+  --panel: rgba(10, 12, 16, 0.74);
+  --gold: #d9a441;
+  --gold-dim: rgba(217, 164, 65, 0.4);
+  --paper: #f2e9d6;
+  --paper-dim: #cdbf9f;
+  --mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --gothic: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: #9db4c0;
+  color: var(--paper);
+  font-family: var(--gothic);
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+}
+
+canvas {
+  display: block;
+}
+
+#homeLink {
+  position: fixed;
+  top: 112px;
+  right: 14px;
+  z-index: 12;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gold-dim);
+  background: var(--panel);
+  color: var(--paper);
+  padding: 0 12px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  backdrop-filter: blur(6px);
+}
+
+#homeLink:hover {
+  border-color: var(--gold);
+  color: #fff;
+}
+
+#titleBox {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  pointer-events: none;
+}
+
+#titleBox .logo,
+#clockBox,
+#infoCard,
+#hint,
+#caption .cap-body,
+.chip,
+#timeline {
+  background: var(--panel);
+  border: 1px solid var(--gold-dim);
+  backdrop-filter: blur(6px);
+}
+
+#titleBox .logo {
+  border-left: 4px solid var(--gold);
+  padding: 8px 14px 10px;
+}
+
+#titleBox .logo .eyebrow {
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+}
+
+#titleBox .logo h1 {
+  color: var(--paper);
+  font-family: var(--mincho);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.1em;
+  text-shadow: 0 1px 0 #000;
+}
+
+#clockBox {
+  min-width: 108px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6px 14px;
+}
+
+#clockBox .date {
+  color: var(--paper-dim);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+#clockBox .time {
+  color: #fff;
+  font-family: var(--mincho);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+#clockBox .wakoku {
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+}
+
+#compass {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gold-dim);
+  border-radius: 50%;
+  background: var(--panel);
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+#compassNeedle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--gold);
+  font-family: var(--mincho);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  transform-origin: center;
+}
+
+#compassNeedle::before {
+  content: "▲";
+  color: #fff;
+  font-size: 10px;
+}
+
+#infoCard {
+  position: fixed;
+  top: 78px;
+  left: 12px;
+  z-index: 9;
+  max-width: 260px;
+  border-left: 4px solid var(--gold);
+  padding: 10px 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+
+#infoCard.show {
+  opacity: 1;
+}
+
+#infoCard .nm {
+  font-family: var(--mincho);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+#infoCard .meta {
+  color: #d6c9a8;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+#infoCard .note {
+  color: #efe6d2;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 6px;
+}
+
+#hint {
+  position: fixed;
+  top: 78px;
+  right: 14px;
+  z-index: 8;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 5px 10px;
+  pointer-events: none;
+  transition: opacity 1s;
+}
+
+#caption {
+  position: fixed;
+  left: 50%;
+  bottom: 128px;
+  z-index: 9;
+  max-width: min(620px, 92vw);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#caption.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#caption .cap-title {
+  display: inline-block;
+  border: 1px solid var(--gold);
+  background: linear-gradient(135deg, #1a1206, #3a2a0c);
+  color: var(--gold);
+  font-family: var(--mincho);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.4em;
+  margin-bottom: 6px;
+  padding: 3px 14px 3px 18px;
+}
+
+#caption .cap-body {
+  border-top: 2px solid var(--gold);
+  font-family: var(--mincho);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  padding: 8px 18px;
+  text-shadow: 0 1px 2px #000;
+}
+
+#viewStrip {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 64px;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px 12px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+#viewStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--paper);
+  cursor: pointer;
+  font-family: var(--gothic);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  padding: 7px 12px;
+}
+
+.chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.chip.sys {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.chip.active {
+  border-color: var(--gold);
+  background: rgba(70, 52, 16, 0.85);
+  color: #fff;
+}
+
+#timeline {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  background: linear-gradient(to top, rgba(5, 6, 8, 0.92), rgba(5, 6, 8, 0.55));
+  padding: 10px 14px 12px;
+}
+
+#playBtn {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: rgba(40, 30, 10, 0.8);
+  color: var(--gold);
+  cursor: pointer;
+  font-size: 15px;
+}
+
+#speedBtn {
+  flex: 0 0 auto;
+  min-width: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 5px 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+#trackWrap {
+  position: relative;
+  flex: 1;
+  height: 30px;
+  display: flex;
+  align-items: center;
+}
+
+#track {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+#track::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(217, 164, 65, 0.8);
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+#track::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+}
+
+#fillBar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  z-index: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8a6420, var(--gold));
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.tick {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  width: 2px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+  transform: translate(-1px, -50%);
+}
+
+#hourLabels {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  display: flex;
+  justify-content: space-between;
+  color: #b9ac8e;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+@media (max-width: 560px) {
+  #titleBox .logo h1 {
+    font-size: 17px;
+  }
+
+  #clockBox .time {
+    font-size: 21px;
+  }
+
+  #caption .cap-body {
+    font-size: 13px;
+  }
+
+  #infoCard {
+    max-width: 180px;
+    top: 70px;
+  }
+
+  #homeLink {
+    top: 106px;
+    right: 10px;
+  }
+}
