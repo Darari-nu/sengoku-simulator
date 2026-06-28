@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">戦国合戦 3D絵巻</title>
+  <desc id="desc">山地と部隊配置を抽象化した戦国合戦 3D絵巻の共有画像</desc>
+  <rect width="1200" height="630" fill="#090b0d"/>
+  <path d="M0 0h1200v630H0z" fill="#11170f"/>
+  <path d="M-80 520C130 390 240 420 390 300s300-120 420 5 245 98 470-35v360H-80z" fill="#24382a"/>
+  <path d="M-40 420c200-90 310-60 460-170s280-80 420 30 240 88 420-12" fill="none" stroke="#d7a642" stroke-width="8" stroke-opacity=".65"/>
+  <path d="M80 120h1040v390H80z" fill="none" stroke="#d7a642" stroke-opacity=".28" stroke-width="2"/>
+  <rect x="725" y="215" width="54" height="54" fill="#b94735" stroke="#f1e8d4" stroke-width="5"/>
+  <rect x="463" y="340" width="54" height="54" fill="#6389bd" stroke="#f1e8d4" stroke-width="5"/>
+  <rect x="590" y="255" width="48" height="48" fill="#d7a642" stroke="#f1e8d4" stroke-width="5"/>
+  <text x="100" y="160" fill="#d7a642" font-family="serif" font-size="34" font-weight="700" letter-spacing="14">戦国合戦</text>
+  <text x="96" y="275" fill="#f1e8d4" font-family="serif" font-size="82" font-weight="800" letter-spacing="10">3D絵巻</text>
+  <text x="102" y="342" fill="#c9bea5" font-family="sans-serif" font-size="28" letter-spacing="5">歴史を俯瞰で体験する</text>
+  <text x="102" y="458" fill="#f1e8d4" font-family="sans-serif" font-size="24" letter-spacing="4">関ヶ原 / 桶狭間 / 川中島</text>
+</svg>

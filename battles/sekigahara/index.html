@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>決戦 関ヶ原 ― 3D俯瞰絵巻</title>
+<meta name="description" content="関ヶ原の戦いを3D俯瞰絵巻で体験。時刻スライダーで部隊移動、裏切り、総崩れまでを追えるインタラクティブ合戦シミュレーター。">
+<meta property="og:title" content="決戦 関ヶ原 ― 3D俯瞰絵巻">
+<meta property="og:description" content="関ヶ原の戦いを3D俯瞰絵巻で体験。時刻と部隊配置から戦況を読む。">
+<meta property="og:image" content="../../assets/ogp/sengoku-ogp.svg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -169,11 +174,19 @@
     background:var(--panel);padding:5px 10px;border-radius:3px;letter-spacing:.08em;
     pointer-events:none;transition:opacity 1s;backdrop-filter:blur(4px);
   }
+  #homeLink{
+    position:fixed;top:112px;right:14px;z-index:12;
+    min-height:40px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid var(--gold-dim);background:var(--panel);color:var(--paper);
+    font-size:12px;font-weight:700;letter-spacing:.12em;text-decoration:none;backdrop-filter:blur(6px);
+  }
+  #homeLink:hover{border-color:var(--gold);color:#fff}
   @media(max-width:560px){
     #titleBox .logo h1{font-size:17px}
     #clockBox .time{font-size:21px}
     #caption .cap-body{font-size:13px}
     #infoCard{max-width:180px;top:70px}
+    #homeLink{top:106px;right:10px}
   }
   @media(prefers-reduced-motion:reduce){
     #caption{transition:opacity .2s}
@@ -182,6 +195,7 @@
 </head>
 <body>
 <div id="stage"></div>
+<a id="homeLink" href="../../">合戦一覧</a>
 
 <div id="titleBox">
   <div class="logo">

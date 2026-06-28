@@ -1,0 +1,50 @@
+window.BATTLES = [
+  {
+    id: "sekigahara",
+    title: "関ヶ原の戦い",
+    subtitle: "天下分け目の決戦",
+    period: "慶長5年 / 1600年",
+    date: "慶長五年九月十五日",
+    location: "美濃国 関ヶ原",
+    route: "./battles/sekigahara/",
+    status: "published",
+    statusLabel: "公開中",
+    schedule: "第壱回",
+    sides: "徳川家康 vs 石田三成",
+    highlight: "霧の開戦から小早川の寝返り、西軍総崩れまでを時刻スライダーで追う。",
+    tags: ["大規模布陣", "裏切り", "総崩れ", "山地"],
+    visual: "sekigahara"
+  },
+  {
+    id: "okehazama",
+    title: "桶狭間の戦い",
+    subtitle: "豪雨の奇襲",
+    period: "永禄3年 / 1560年",
+    date: "永禄三年五月十九日",
+    location: "尾張国 桶狭間",
+    route: "./battles/okehazama/",
+    status: "production",
+    statusLabel: "制作中",
+    schedule: "第弐回",
+    sides: "織田信長 vs 今川義元",
+    highlight: "大軍の油断、急変する天候、谷筋を抜ける奇襲を3D化する予定。",
+    tags: ["奇襲", "豪雨", "狭隘地形", "少数精鋭"],
+    visual: "okehazama"
+  },
+  {
+    id: "kawanakajima",
+    title: "川中島の戦い",
+    subtitle: "霧の八幡原",
+    period: "永禄4年 / 1561年",
+    date: "永禄四年九月十日",
+    location: "信濃国 川中島",
+    route: "./battles/kawanakajima/",
+    status: "production",
+    statusLabel: "制作中",
+    schedule: "第参回",
+    sides: "武田信玄 vs 上杉謙信",
+    highlight: "啄木鳥戦法、妻女山別働隊、霧中の遭遇戦を俯瞰で見せる予定。",
+    tags: ["霧", "別働隊", "啄木鳥戦法", "遭遇戦"],
+    visual: "kawanakajima"
+  }
+];

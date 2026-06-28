@@ -3,58 +3,137 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>関ヶ原の戦い 3D俯瞰シミュレーター</title>
-  <meta name="description" content="1600年 関ヶ原の戦いを3D俯瞰で体験。東西両軍の動きを時間スライダーで追い、武将視点を切り替えられるインタラクティブ合戦シミュレーター。">
-  <link rel="stylesheet" href="style.css">
+  <title>戦国合戦 3D絵巻 - 歴史を俯瞰で体験する</title>
+  <meta name="description" content="関ヶ原・桶狭間・川中島など歴史上の合戦を3D俯瞰絵巻で体験できる静的サイト。時刻と部隊配置を追いながら、地形と戦況の変化を眺められます。">
+  <meta property="og:title" content="戦国合戦 3D絵巻">
+  <meta property="og:description" content="歴史上の合戦を3D俯瞰絵巻で体験する。初期公開は関ヶ原・桶狭間・川中島。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="./assets/ogp/sengoku-ogp.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/index.css">
 </head>
 <body>
   <header class="site-header">
-    <h1>関ヶ原の戦い <span>1600年 天下分け目の決戦</span></h1>
-    <div class="view-switcher" id="view-switcher">
-      <span class="view-label">視点：</span>
-      <button class="view-btn active" data-general="overview">俯瞰</button>
-      <button class="view-btn" data-general="ieyasu">徳川家康</button>
-      <button class="view-btn" data-general="mitsunari">石田三成</button>
-      <button class="view-btn" data-general="hideaki">小早川秀秋</button>
-    </div>
+    <a class="brand" href="./" aria-label="戦国合戦 3D絵巻 ホーム">
+      <span class="brand-mark">3D</span>
+      <span>
+        <strong>戦国合戦 3D絵巻</strong>
+        <small>歴史を俯瞰で体験する</small>
+      </span>
+    </a>
+    <nav class="site-nav" aria-label="主要ナビゲーション">
+      <a href="#collection">合戦一覧</a>
+      <a href="#notes">史実注記</a>
+    </nav>
   </header>
 
   <main>
-    <div id="canvas-container"></div>
-
-    <aside class="side-panel">
-      <div class="time-control">
-        <p class="time-label" id="time-label">開戦前夜 / 午前8時</p>
-        <input type="range" id="time-slider" min="0" max="100" value="0" step="1">
-        <div class="playback">
-          <button id="play-btn">▶ 再生</button>
-          <button id="reset-btn">↺ リセット</button>
-        </div>
+    <section class="front-board" aria-labelledby="page-title">
+      <div class="front-copy">
+        <p class="eyebrow">第一期 三合戦</p>
+        <h1 id="page-title">戦国の戦場を、上空から読む。</h1>
+        <p class="lead">関ヶ原を核に、桶狭間と川中島へ。地形、時刻、部隊の動きから、合戦の流れをつかむための3D俯瞰絵巻です。</p>
       </div>
+      <div class="featured-stage" id="featured-stage" aria-label="注目合戦"></div>
+    </section>
 
-      <div class="event-log" id="event-log">
-        <h2>戦況ログ</h2>
-        <ul id="event-list"></ul>
+    <section class="program-band" id="collection" aria-labelledby="collection-title">
+      <div class="section-head">
+        <p class="eyebrow">合戦番組表</p>
+        <h2 id="collection-title">公開・制作中の三合戦</h2>
       </div>
+      <div class="battle-grid" id="battle-grid"></div>
+      <noscript>
+        <p class="noscript">JavaScriptを有効にすると合戦カードが表示されます。</p>
+      </noscript>
+    </section>
 
-      <div class="if-mode">
-        <h2>IFモード</h2>
-        <label class="if-toggle">
-          <input type="checkbox" id="if-toggle">
-          小早川が裏切らなかったら？
-        </label>
+    <section class="notes-band" id="notes" aria-labelledby="notes-title">
+      <div class="notes-inner">
+        <h2 id="notes-title">史実注記</h2>
+        <p>本サイトは歴史理解のための可視化であり、布陣・兵数・移動経路・時刻表現は厳密な再現ではありません。地形と戦況の関係を直感的に読むため、演出上の簡略化を含みます。</p>
       </div>
-    </aside>
+    </section>
   </main>
 
-  <div class="legend">
-    <span class="dot east"></span> 東軍（徳川）
-    <span class="dot west"></span> 西軍（石田）
-    <span class="dot kobayakawa"></span> 小早川（日和見）
-  </div>
+  <footer class="site-footer">
+    <span>制作: darari</span>
+    <span>静的GitHub Pages / Three.js</span>
+  </footer>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="battle-data.js"></script>
-  <script src="simulator.js"></script>
+  <script src="./data/battles-index.js"></script>
+  <script>
+    (function() {
+      const battles = window.BATTLES || [];
+      const featured = battles.find(battle => battle.status === "published") || battles[0];
+      const featuredStage = document.getElementById("featured-stage");
+      const grid = document.getElementById("battle-grid");
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, char => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        })[char]);
+      }
+
+      function visualMarkup(type) {
+        return `
+          <div class="battle-visual ${escapeHtml(type)}" aria-hidden="true">
+            <span class="ridge ridge-a"></span>
+            <span class="ridge ridge-b"></span>
+            <span class="route-line"></span>
+            <span class="unit east"></span>
+            <span class="unit west"></span>
+            <span class="unit key"></span>
+          </div>
+        `;
+      }
+
+      function tagMarkup(tags) {
+        return tags.map(tag => `<span>${escapeHtml(tag)}</span>`).join("");
+      }
+
+      if (featured) {
+        featuredStage.innerHTML = `
+          ${visualMarkup(featured.visual)}
+          <div class="featured-copy">
+            <span class="status ${featured.status}">${escapeHtml(featured.statusLabel)}</span>
+            <p>${escapeHtml(featured.schedule)}</p>
+            <h2>${escapeHtml(featured.title)}</h2>
+            <p>${escapeHtml(featured.highlight)}</p>
+            <a class="primary-link" href="${escapeHtml(featured.route)}">3D絵巻を見る</a>
+          </div>
+        `;
+      }
+
+      grid.innerHTML = battles.map(battle => `
+        <article class="battle-card ${escapeHtml(battle.status)}">
+          ${visualMarkup(battle.visual)}
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="schedule">${escapeHtml(battle.schedule)}</span>
+              <span class="status ${escapeHtml(battle.status)}">${escapeHtml(battle.statusLabel)}</span>
+            </div>
+            <h3>${escapeHtml(battle.title)}</h3>
+            <p class="subtitle">${escapeHtml(battle.subtitle)}</p>
+            <dl>
+              <div><dt>時代</dt><dd>${escapeHtml(battle.period)}</dd></div>
+              <div><dt>場所</dt><dd>${escapeHtml(battle.location)}</dd></div>
+              <div><dt>対峙</dt><dd>${escapeHtml(battle.sides)}</dd></div>
+            </dl>
+            <p class="highlight">${escapeHtml(battle.highlight)}</p>
+            <div class="tag-row">${tagMarkup(battle.tags)}</div>
+            <a class="card-link" href="${escapeHtml(battle.route)}">${battle.status === "published" ? "見る" : "予告を見る"}</a>
+          </div>
+        </article>
+      `).join("");
+    })();
+  </script>
 </body>
 </html>
