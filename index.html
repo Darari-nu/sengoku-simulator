@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>関ヶ原の戦い 3D俯瞰シミュレーター</title>
+  <meta name="description" content="1600年 関ヶ原の戦いを3D俯瞰で体験。東西両軍の動きを時間スライダーで追い、武将視点を切り替えられるインタラクティブ合戦シミュレーター。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>関ヶ原の戦い <span>1600年 天下分け目の決戦</span></h1>
+    <div class="view-switcher" id="view-switcher">
+      <span class="view-label">視点：</span>
+      <button class="view-btn active" data-general="overview">俯瞰</button>
+      <button class="view-btn" data-general="ieyasu">徳川家康</button>
+      <button class="view-btn" data-general="mitsunari">石田三成</button>
+      <button class="view-btn" data-general="hideaki">小早川秀秋</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="canvas-container"></div>
+
+    <aside class="side-panel">
+      <div class="time-control">
+        <p class="time-label" id="time-label">開戦前夜 / 午前8時</p>
+        <input type="range" id="time-slider" min="0" max="100" value="0" step="1">
+        <div class="playback">
+          <button id="play-btn">▶ 再生</button>
+          <button id="reset-btn">↺ リセット</button>
+        </div>
+      </div>
+
+      <div class="event-log" id="event-log">
+        <h2>戦況ログ</h2>
+        <ul id="event-list"></ul>
+      </div>
+
+      <div class="if-mode">
+        <h2>IFモード</h2>
+        <label class="if-toggle">
+          <input type="checkbox" id="if-toggle">
+          小早川が裏切らなかったら？
+        </label>
+      </div>
+    </aside>
+  </main>
+
+  <div class="legend">
+    <span class="dot east"></span> 東軍（徳川）
+    <span class="dot west"></span> 西軍（石田）
+    <span class="dot kobayakawa"></span> 小早川（日和見）
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="battle-data.js"></script>
+  <script src="simulator.js"></script>
+</body>
+</html>

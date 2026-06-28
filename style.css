@@ -1,0 +1,225 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --east: #E84C4C;
+  --west: #4C9CE8;
+  --koba: #F0C040;
+  --bg: #0d0d1a;
+  --panel: #16162a;
+  --text: #e8dfc8;
+  --muted: #8888aa;
+  --border: #2a2a44;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+.site-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: rgba(13,13,26,0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 100;
+}
+
+.site-header h1 {
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.site-header h1 span {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 10px;
+}
+
+.view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.view-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.view-btn {
+  background: var(--border);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.view-btn:hover { border-color: var(--east); color: var(--text); }
+.view-btn.active { background: var(--east); border-color: var(--east); color: #fff; }
+
+main {
+  display: flex;
+  height: 100vh;
+  padding-top: 56px;
+}
+
+#canvas-container {
+  flex: 1;
+  height: 100%;
+  cursor: grab;
+}
+
+#canvas-container:active { cursor: grabbing; }
+
+.side-panel {
+  width: 300px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.time-control {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.time-label {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--east);
+  margin-bottom: 10px;
+}
+
+.playback {
+  display: flex;
+  gap: 8px;
+}
+
+.playback button {
+  flex: 1;
+  padding: 8px;
+  background: var(--border);
+  border: 1px solid #3a3a5a;
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.playback button:hover { background: #2a2a44; }
+
+#play-btn { border-color: var(--east); }
+
+.event-log h2,
+.if-mode h2 {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+#event-list {
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#event-list li {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 8px;
+  border-left: 2px solid var(--border);
+  line-height: 1.5;
+}
+
+#event-list li:first-child {
+  color: var(--text);
+  border-left-color: var(--east);
+}
+
+#event-list li.highlight {
+  color: var(--koba);
+  border-left-color: var(--koba);
+  background: rgba(240,192,64,0.08);
+}
+
+.if-mode label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.if-mode input[type="checkbox"] {
+  accent-color: var(--koba);
+  width: 16px;
+  height: 16px;
+}
+
+.legend {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(13,13,26,0.8);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.dot.east { background: var(--east); }
+.dot.west { background: var(--west); }
+.dot.kobayakawa { background: var(--koba); }
