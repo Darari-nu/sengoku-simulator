@@ -240,6 +240,11 @@
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
 const smooth=t=>t*t*(3-2*t);
+const query=new URLSearchParams(location.search);
+const verifyMode=query.get('verify')==='1';
+const requestedTime=Number.parseFloat(query.get('t')||'');
+const initialTime=Number.isFinite(requestedTime)?clamp(requestedTime,8,15):8;
+const weatherScale=query.get('weather')==='0'?0:1;
 
 function bump(x,z,cx,cz,r,amp){const d=((x-cx)**2+(z-cz)**2)/(r*r);return amp*Math.exp(-d);}
 function rough(x,z){return Math.sin(x*0.05)*Math.cos(z*0.045)*1.6+Math.sin(x*0.013+z*0.017)*2.4;}
@@ -271,7 +276,7 @@ renderer.setSize(innerWidth,innerHeight);
 stage.appendChild(renderer.domElement);
 
 const scene=new THREE.Scene();
-scene.fog=new THREE.FogExp2(0xd8dde0,0.002);
+scene.fog=new THREE.FogExp2(0xd8dde0,verifyMode?0.00024:0.0011);
 const camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,1,3000);
 
 const hemi=new THREE.HemisphereLight(0xdfe8f0,0x4a5440,0.85);scene.add(hemi);
@@ -528,9 +533,12 @@ const CAPTIONS=[
 ];
 const CAP_DUR=0.85;
 
-const cam={mode:'auto',unit:null,
-  az:-2.35,polar:1.02,radius:430,center:new THREE.Vector3(-30,10,-10),
-  pos:new THREE.Vector3(),tgt:new THREE.Vector3(-30,10,-10),init:false};
+const verifyCenter=new THREE.Vector3(-24,18,4);
+const defaultCenter=new THREE.Vector3(-30,10,-10);
+const cam={mode:verifyMode?'free':'auto',unit:null,
+  az:verifyMode?-2.2:-2.35,polar:verifyMode?0.82:1.02,radius:verifyMode?570:430,
+  center:(verifyMode?verifyCenter:defaultCenter).clone(),
+  pos:new THREE.Vector3(),tgt:(verifyMode?verifyCenter:defaultCenter).clone(),init:false};
 
 function orbitPos(center,az,polar,r){
   return new THREE.Vector3(
@@ -607,9 +615,12 @@ function enterFree(){
 }
 
 const $=id=>document.getElementById(id);
-let H=8.0,playing=true,speedIdx=0;
+let H=initialTime,playing=!verifyMode&&query.get('paused')!=='1',speedIdx=0;
 const SPEEDS=[0.09,0.18,0.36];
 const SPEEDLBL=['×1','×2','×4'];
+$('track').value=H;
+$('playBtn').textContent=playing?'▮▮':'▶';
+$('speedBtn').textContent=SPEEDLBL[speedIdx];
 
 const strip=$('viewStrip');
 function addChip(key,label,cls,fn){
@@ -623,7 +634,8 @@ function addChip(key,label,cls,fn){
 addChip('auto','📺 おまかせ','sys',()=>{cam.mode='auto';cam.unit=null;setActiveChip('auto');hideInfo();});
 addChip('free','🗺 俯瞰','sys',()=>{
   cam.mode='free';cam.unit=null;
-  cam.center.set(-30,10,-10);cam.radius=430;cam.polar=1.02;
+  const c=verifyMode?verifyCenter:defaultCenter;
+  cam.center.copy(c);cam.radius=verifyMode?570:430;cam.polar=verifyMode?0.82:1.02;cam.az=verifyMode?-2.2:-2.35;
   setActiveChip('free');hideInfo();
 });
 UNITS.forEach(u=>{
@@ -635,7 +647,7 @@ UNITS.forEach(u=>{
 function setActiveChip(key){
   strip.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.key===key));
 }
-setActiveChip('auto');
+setActiveChip(verifyMode?'free':'auto');
 function showInfo(u){
   $('infoName').textContent=u.name;
   $('infoMeta').textContent=(u.side==='east'?'東軍':u.side==='turn'?'西軍（去就不明）':u.side==='watch'?'西軍（南宮山）':'西軍')+'　兵力 '+u.men;
@@ -703,20 +715,20 @@ function tick(){
   const sky=skyMorning.clone().lerp(skyNoon,day);
   scene.background=sky;
   scene.fog.color.copy(fogMorning.clone().lerp(fogNoon,day));
-  const fogAmt=clamp((9.1-H)/1.1,0,1);
-  scene.fog.density=0.0012+smooth(fogAmt)*0.0095;
+  const fogAmt=clamp((9.1-H)/1.1,0,1)*weatherScale;
+  scene.fog.density=(weatherScale===0?0.00024:0.0010)+smooth(fogAmt)*0.0048;
   sun.intensity=0.75+day*0.45;
   const sunAng=lerp(0.32,1.18,clamp((H-8)/5,0,1));
   sun.position.set(Math.cos(sunAng)*400,Math.sin(sunAng)*420,-160);
   sun.color.setHSL(0.09,lerp(0.55,0.18,day),lerp(0.85,1,day));
   fogPlanes.forEach(m=>{
-    m.material.opacity=smooth(fogAmt)*m.userData.base;
+    m.material.opacity=smooth(fogAmt)*m.userData.base*0.58*weatherScale;
     m.position.x+=m.userData.vx*dt;m.position.z+=m.userData.vz*dt;
   });
 
   const sOn=H>=10.0&&H<=10.7;
   smokeSprites.forEach((sp,i)=>{
-    if(!sOn){sp.material.opacity=0;return;}
+    if(!sOn||weatherScale===0){sp.material.opacity=0;return;}
     const ph=(performance.now()*0.0004+i*0.17)%1;
     const bx=-150,bz=-140,bh=terrainH(bx,bz);
     sp.position.set(bx+Math.sin(ph*9+i)*3,bh+6+ph*55,bz+Math.cos(ph*7+i)*3);

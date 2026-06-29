@@ -9,6 +9,11 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth = t => t * t * (3 - 2 * t);
   const $ = id => document.getElementById(id);
+  const query = new URLSearchParams(window.location.search);
+  const verifyMode = query.get("verify") === "1";
+  const requestedTime = Number.parseFloat(query.get("t") || "");
+  const initialTime = Number.isFinite(requestedTime) ? clamp(requestedTime, cfg.time.min, cfg.time.max) : cfg.time.min;
+  const weatherScale = query.get("weather") === "0" ? 0 : 1;
 
   $("battleTitle").textContent = cfg.title;
   $("battleEyebrow").textContent = cfg.eyebrow;
@@ -16,7 +21,7 @@
   $("track").min = cfg.time.min;
   $("track").max = cfg.time.max;
   $("track").step = cfg.time.step || 0.005;
-  $("track").value = cfg.time.min;
+  $("track").value = initialTime;
 
   function toColor(value) {
     return new THREE.Color(value);
@@ -298,15 +303,16 @@
     arrowObjs.push({ item, arrow });
   });
 
+  const verifyCenter = (verifyMode && cfg.camera.verifyCenter) || cfg.camera.center;
   const cam = {
-    mode: "auto",
+    mode: verifyMode ? "free" : "auto",
     unit: null,
-    az: cfg.camera.az || -2.35,
-    polar: cfg.camera.polar || 1.02,
-    radius: cfg.camera.radius || 430,
-    center: new THREE.Vector3(cfg.camera.center[0], cfg.camera.center[1], cfg.camera.center[2]),
+    az: verifyMode && Number.isFinite(cfg.camera.verifyAz) ? cfg.camera.verifyAz : (cfg.camera.az || -2.35),
+    polar: verifyMode && Number.isFinite(cfg.camera.verifyPolar) ? cfg.camera.verifyPolar : (cfg.camera.polar || 1.02),
+    radius: verifyMode && Number.isFinite(cfg.camera.verifyRadius) ? cfg.camera.verifyRadius : (cfg.camera.radius || 430),
+    center: new THREE.Vector3(verifyCenter[0], verifyCenter[1], verifyCenter[2]),
     pos: new THREE.Vector3(),
-    tgt: new THREE.Vector3(cfg.camera.center[0], cfg.camera.center[1], cfg.camera.center[2]),
+    tgt: new THREE.Vector3(verifyCenter[0], verifyCenter[1], verifyCenter[2]),
     init: false
   };
 
@@ -402,14 +408,16 @@
     hideInfo();
   }
 
-  let H = cfg.time.min;
-  let playing = true;
+  let H = initialTime;
+  let playing = !verifyMode && query.get("paused") !== "1";
   let speedIdx = 0;
   const speeds = cfg.time.speeds || [0.07, 0.14, 0.28];
   const speedLabels = cfg.time.speedLabels || ["x1", "x2", "x4"];
   const track = $("track");
   const fill = $("fillBar");
   const wrap = $("trackWrap");
+  $("playBtn").textContent = playing ? "▮▮" : "▶";
+  $("speedBtn").textContent = speedLabels[speedIdx];
 
   function addChip(key, label, sideKey, fn) {
     const button = document.createElement("button");
@@ -446,9 +454,11 @@
   addChip("free", "俯瞰", "sys", () => {
     cam.mode = "free";
     cam.unit = null;
-    cam.center.set(cfg.camera.center[0], cfg.camera.center[1], cfg.camera.center[2]);
-    cam.radius = cfg.camera.radius || 430;
-    cam.polar = cfg.camera.polar || 1.02;
+    const center = (verifyMode && cfg.camera.verifyCenter) || cfg.camera.center;
+    cam.center.set(center[0], center[1], center[2]);
+    cam.radius = verifyMode && Number.isFinite(cfg.camera.verifyRadius) ? cfg.camera.verifyRadius : (cfg.camera.radius || 430);
+    cam.polar = verifyMode && Number.isFinite(cfg.camera.verifyPolar) ? cfg.camera.verifyPolar : (cfg.camera.polar || 1.02);
+    cam.az = verifyMode && Number.isFinite(cfg.camera.verifyAz) ? cfg.camera.verifyAz : (cfg.camera.az || -2.35);
     setActiveChip("free");
     hideInfo();
   });
@@ -460,7 +470,7 @@
       showInfo(unit);
     });
   });
-  setActiveChip("auto");
+  setActiveChip(verifyMode ? "free" : "auto");
 
   cfg.captions.forEach(caption => {
     const tick = document.createElement("div");
@@ -540,13 +550,16 @@
     const day = smooth(clamp((H - cfg.time.min) / (cfg.sky.dayLength || 3), 0, 1));
     scene.background.copy(toColor(cfg.sky.morning).lerp(toColor(cfg.sky.noon), day));
     scene.fog.color.copy(toColor(cfg.sky.fog).lerp(toColor(cfg.sky.clearFog || cfg.sky.fog), day));
-    const fogPeak = cfg.weather?.fogPeak ? cfg.weather.fogPeak(H) : clamp((cfg.time.min + 1.4 - H) / 1.4, 0, 1);
-    scene.fog.density = (cfg.sky.fogDensity || 0.002) + smooth(fogPeak) * (cfg.sky.fogBoost || 0.008);
+    const fogPeakRaw = cfg.weather?.fogPeak ? cfg.weather.fogPeak(H) : clamp((cfg.time.min + 1.4 - H) / 1.4, 0, 1);
+    const fogPeak = fogPeakRaw * weatherScale;
+    const baseFogDensity = weatherScale === 0 ? (cfg.sky.verifyFogDensity || 0.00028) : (cfg.sky.fogDensity || 0.002);
+    scene.fog.density = baseFogDensity + smooth(fogPeak) * (cfg.sky.fogBoost || 0.008);
     sun.intensity = 0.75 + day * 0.5;
     sun.position.set(Math.cos(day * 1.2 + 0.2) * 360, 270 + day * 180, -160);
 
     fogPlanes.forEach(mesh => {
-      mesh.material.opacity = smooth(fogPeak) * mesh.userData.base;
+      const fogOpacityScale = cfg.weather?.fogOpacityScale ?? 0.58;
+      mesh.material.opacity = smooth(fogPeak) * mesh.userData.base * fogOpacityScale * weatherScale;
       mesh.position.x += mesh.userData.vx * dt;
       mesh.position.z += mesh.userData.vz * dt;
     });
@@ -554,7 +567,7 @@
     if (rain) {
       const rainCfg = cfg.weather.rain;
       const rainOn = clamp((H - rainCfg.start) / 0.22, 0, 1) * clamp((rainCfg.end - H) / 0.22, 0, 1);
-      rain.material.opacity = rainOn * (rainCfg.opacity || 0.42);
+      rain.material.opacity = rainOn * (rainCfg.opacity || 0.42) * weatherScale;
       const pos = rain.geometry.attributes.position;
       for (let i = 0; i < pos.count; i++) {
         let y = pos.getY(i) - dt * 85;

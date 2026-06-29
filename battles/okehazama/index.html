@@ -71,8 +71,9 @@
         noon: 0x6f8589,
         fog: 0xd7dde0,
         clearFog: 0xb8c5c9,
-        fogDensity: 0.0018,
-        fogBoost: 0.011,
+        fogDensity: 0.00012,
+        verifyFogDensity: 0.0001,
+        fogBoost: 0.00012,
         dayLength: 2.2
       },
       camera: {
@@ -81,6 +82,10 @@
         az: -2.28,
         polar: 1.02,
         radius: 430,
+        verifyCenter: [-10, 18, -18],
+        verifyAz: -2.12,
+        verifyPolar: 0.82,
+        verifyRadius: 510,
         autoPolar: 0.96,
         autoRadius: 252
       },
@@ -200,6 +205,7 @@
           Math.max(0, Math.min(1, (11.8 - time) / 0.8)) * 0.22,
           Math.max(0, Math.min(1, (time - 13.0) / 0.35)) * Math.max(0, Math.min(1, (14.35 - time) / 0.45))
         ),
+        fogOpacityScale: 0,
         rain: { start: 13.05, end: 14.25, drops: 280, opacity: 0.56, color: 0xcfe0ef }
       },
       captionDuration: 0.78
