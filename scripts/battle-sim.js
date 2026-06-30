@@ -14,6 +14,23 @@
   const requestedTime = Number.parseFloat(query.get("t") || "");
   const initialTime = Number.isFinite(requestedTime) ? clamp(requestedTime, cfg.time.min, cfg.time.max) : cfg.time.min;
   const weatherScale = query.get("weather") === "0" ? 0 : 1;
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  const battleSlug = pathParts[pathParts.length - 1] === "index.html" ? pathParts[pathParts.length - 2] : pathParts[pathParts.length - 1];
+  const introImages = {
+    sekigahara: "../../assets/intro/sekigahara-intro.jpg",
+    okehazama: "../../assets/intro/okehazama-intro.jpg",
+    kawanakajima: "../../assets/intro/kawanakajima-intro.jpg",
+    nagashino: "../../assets/intro/nagashino-intro.jpg",
+    yamazaki: "../../assets/intro/yamazaki-intro.jpg",
+    mikatagahara: "../../assets/intro/mikatagahara-intro.jpg"
+  };
+  const stateStyles = {
+    "待機": { color: "#d8ccb0", bg: "rgba(18,18,16,.72)", border: "rgba(244,234,215,.34)" },
+    "前進": { color: "#ffd98a", bg: "rgba(54,38,10,.78)", border: "rgba(217,164,65,.7)" },
+    "交戦": { color: "#ffb1a2", bg: "rgba(68,18,12,.78)", border: "rgba(210,80,64,.72)" },
+    "後退": { color: "#cfe2ff", bg: "rgba(12,28,54,.78)", border: "rgba(127,166,212,.65)" },
+    "壊滅": { color: "#c3c3c3", bg: "rgba(18,18,18,.78)", border: "rgba(190,190,190,.42)" }
+  };
 
   $("battleTitle").textContent = cfg.title;
   $("battleEyebrow").textContent = cfg.eyebrow;
@@ -22,6 +39,100 @@
   $("track").max = cfg.time.max;
   $("track").step = cfg.time.step || 0.005;
   $("track").value = initialTime;
+  createIntroCut();
+
+  function parseMen(value) {
+    const text = String(value || "").replace(/[，,]/g, "");
+    const match = text.match(/(\d+(?:\.\d+)?)/);
+    if (!match) return 0;
+    const n = Number(match[1]);
+    return text.includes("万") ? n * 10000 : n;
+  }
+
+  function unitForceScale(unit) {
+    if (Number.isFinite(unit.forceScale)) return unit.forceScale;
+    const men = parseMen(unit.men);
+    if (!men) return 1;
+    return clamp(Math.sqrt(men / 6000), 0.72, 1.72);
+  }
+
+  function unitDisplayCount(unit) {
+    if (Number.isFinite(unit.renderSize)) return unit.renderSize;
+    if (Number.isFinite(unit.size)) return unit.size;
+    const men = parseMen(unit.men);
+    return men ? clamp(Math.round(Math.sqrt(men) * 0.34), 18, 86) : 28;
+  }
+
+  function inferEventType(item) {
+    const title = `${item?.label || ""}${item?.eventLabel || ""}${item?.title || ""}`;
+    const body = `${item?.body || ""}`;
+    const text = title + body;
+    if (/裏切|寝返/.test(text)) return "betrayal";
+    if (/敗走|後退|崩壊|崩れ|総崩|壊滅|討死|決着/.test(title)) return "rout";
+    if (/突撃|急襲|奇襲|攻撃|進撃|強襲/.test(title)) return "charge";
+    if (/開戦|激突|接敵|攻防|交戦/.test(title)) return "clash";
+    return "phase";
+  }
+
+  function eventLabel(item) {
+    if (item?.eventLabel) return item.eventLabel;
+    const type = item?.eventType || inferEventType(item);
+    if (type === "betrayal") return "裏切り";
+    if (type === "rout") return "敗走";
+    if (type === "charge") return "突撃";
+    if (type === "clash") return "開戦";
+    return item?.title || "転機";
+  }
+
+  function createIntroCut() {
+    if (verifyMode || document.getElementById("introCut")) return;
+    const intro = cfg.intro || {};
+    const image = intro.image || introImages[battleSlug];
+    if (!image) return;
+
+    const root = document.createElement("section");
+    root.id = "introCut";
+    root.className = query.get("entry") ? "from-card" : "";
+    root.setAttribute("aria-label", `${cfg.title} 導入カット`);
+
+    const bg = document.createElement("img");
+    bg.className = "intro-bg";
+    bg.src = image;
+    bg.alt = "";
+    bg.decoding = "async";
+    root.appendChild(bg);
+
+    const inner = document.createElement("div");
+    inner.className = "intro-inner";
+
+    const kicker = document.createElement("p");
+    kicker.className = "intro-kicker";
+    kicker.textContent = intro.kicker || cfg.eyebrow || "開戦前夜";
+
+    const title = document.createElement("h2");
+    title.className = "intro-title";
+    title.textContent = intro.title || cfg.title;
+
+    const body = document.createElement("p");
+    body.className = "intro-body";
+    body.textContent = intro.body || `${cfg.dateLabel}。地形、時刻、部隊の動きから、この合戦の転機を追う。`;
+
+    const cue = document.createElement("span");
+    cue.className = "intro-cue";
+    cue.textContent = query.get("entry") ? "合戦札から開幕" : "クリックで開戦";
+
+    inner.append(kicker, title, body, cue);
+    root.appendChild(inner);
+
+    const dismiss = () => root.classList.add("hide");
+    root.addEventListener("click", dismiss);
+    root.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") dismiss();
+    });
+    root.tabIndex = 0;
+    document.body.appendChild(root);
+    window.setTimeout(dismiss, intro.autoHideMs || 5200);
+  }
 
   function toColor(value) {
     return new THREE.Color(value);
@@ -263,6 +374,75 @@
     return sprite;
   }
 
+  function makeStateSprite(state) {
+    const meta = stateStyles[state] || stateStyles["待機"];
+    const fs = 30;
+    const padX = 18;
+    const padY = 10;
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    context.font = `800 ${fs}px "Zen Kaku Gothic New","Hiragino Kaku Gothic ProN",sans-serif`;
+    const width = Math.ceil(context.measureText(state).width + padX * 2);
+    canvas.width = width;
+    canvas.height = fs + padY * 2;
+    const ctx = canvas.getContext("2d");
+    ctx.font = `800 ${fs}px "Zen Kaku Gothic New","Hiragino Kaku Gothic ProN",sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = meta.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = meta.border;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(1.5, 1.5, canvas.width - 3, canvas.height - 3);
+    ctx.fillStyle = meta.color;
+    ctx.fillText(state, canvas.width / 2, canvas.height / 2);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
+    sprite.userData.aspect = canvas.width / canvas.height;
+    return sprite;
+  }
+
+  function setUnitStateSprite(obj, state) {
+    if (obj.state === state) return;
+    if (obj.stateLabel) obj.group.remove(obj.stateLabel);
+    const sprite = makeStateSprite(state);
+    sprite.position.y = 43;
+    obj.group.add(sprite);
+    obj.stateLabel = sprite;
+    obj.state = state;
+  }
+
+  function stateForUnit(unit, time, alpha, movingSq) {
+    if (unit.states) {
+      let found = unit.states[0]?.[1] || "待機";
+      unit.states.forEach(item => {
+        if (time >= item[0]) found = item[1];
+      });
+      return found;
+    }
+    if (alpha < 0.13) return "壊滅";
+    if (unit.fade && time >= unit.fade[0]) return alpha < 0.42 ? "壊滅" : "後退";
+    const caption = currentCaption(time);
+    const text = `${caption?.title || ""}${caption?.body || ""}`;
+    if (/敗走|後退|崩壊|総崩|壊滅|討死|決着/.test(text) && alpha < 0.7) return "後退";
+    if (/開戦|激突|接敵|交戦|攻防|急襲|奇襲|突撃|攻撃|猛攻|裏切|寝返/.test(text)) {
+      const pos = unitPosAt(unit, time);
+      const focus = caption?.focus;
+      const nearFocus = focus ? Math.hypot(pos.x - focus[0], pos.z - focus[1]) < (caption.focusRadius || 132) : true;
+      if (movingSq > 0.01 || nearFocus) return "交戦";
+    }
+    if (movingSq > 0.01) return "前進";
+    return "待機";
+  }
+
+  function updateStateBadge(unitId, state) {
+    document.querySelectorAll(`.state-badge[data-unit-id="${unitId}"]`).forEach(item => {
+      if (item.textContent !== state) item.textContent = state;
+      item.dataset.state = state;
+    });
+  }
+
   (cfg.places || []).forEach(place => {
     const sprite = makeTextSprite(place.name, { fs: place.fs || 38, color: place.color || "#e8dfc8", stroke: 5, weight: 500 });
     sprite.position.set(place.x, terrainH(place.x, place.z) + (place.y || 16), place.z);
@@ -273,6 +453,8 @@
 
   const soldierGeo = new THREE.BoxGeometry(1.7, 2.6, 1.7);
   soldierGeo.translate(0, 1.3, 0);
+  const footprintGeo = new THREE.CircleGeometry(14, 48);
+  footprintGeo.rotateX(-Math.PI / 2);
   const dummy = new THREE.Object3D();
   const unitObjs = {};
 
@@ -300,14 +482,31 @@
     const side = sideOf(unit);
     const group = new THREE.Group();
     const mat = new THREE.MeshLambertMaterial({ color: side.color, transparent: true });
-    const count = unit.size || 28;
+    const count = unitDisplayCount(unit);
+    const forceScale = unitForceScale(unit);
+
+    const footprintMat = new THREE.MeshBasicMaterial({
+      color: side.color,
+      transparent: true,
+      opacity: 0.14,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const footprint = new THREE.Mesh(footprintGeo, footprintMat);
+    footprint.position.y = 0.16;
+    footprint.scale.set(forceScale * 1.35, 1, Math.max(0.78, forceScale * 0.9));
+    footprint.renderOrder = 1;
+    group.add(footprint);
+
     const inst = new THREE.InstancedMesh(soldierGeo, mat, count);
     const offsets = [];
     const cols = Math.ceil(Math.sqrt(count * 1.8));
+    const spacingX = 3.2 * forceScale;
+    const spacingZ = 3.35 * forceScale;
     for (let i = 0; i < count; i++) {
       offsets.push([
-        (i % cols - cols / 2) * 3.4 + (Math.random() - 0.5) * 1.6,
-        Math.floor(i / cols) * 3.5 + (Math.random() - 0.5) * 1.6,
+        (i % cols - cols / 2) * spacingX + (Math.random() - 0.5) * 1.6,
+        Math.floor(i / cols) * spacingZ + (Math.random() - 0.5) * 1.6,
         0.85 + Math.random() * 0.45
       ]);
     }
@@ -348,12 +547,16 @@
       mat,
       poleMat,
       flagMat,
+      footprintMat,
       label,
+      stateLabel: null,
       offsets,
+      forceScale,
       pos: new THREE.Vector3(),
       vel: new THREE.Vector3(),
       facing: new THREE.Vector3(unit.initialFacing?.[0] || -1, 0, unit.initialFacing?.[1] || 0),
-      alpha: 1
+      alpha: 1,
+      state: null
     };
   });
 
@@ -537,7 +740,9 @@
     button.className = sideKey === "sys" ? "chip sys" : "chip";
     button.dataset.key = key;
     const color = sideKey !== "sys" && cfg.sides[sideKey] ? cfg.sides[sideKey].color : null;
-    button.innerHTML = color ? `<span class="dot" style="background:#${Number(color).toString(16).padStart(6, "0")}"></span>${label}` : label;
+    button.innerHTML = color
+      ? `<span class="dot" style="background:#${Number(color).toString(16).padStart(6, "0")}"></span><span class="chip-name">${label}</span><span class="state-badge" data-unit-id="${key}" data-state="待機">待機</span>`
+      : label;
     button.addEventListener("click", fn);
     $("viewStrip").appendChild(button);
   }
@@ -550,6 +755,17 @@
     const side = sideOf(unit);
     $("infoName").textContent = unit.name;
     $("infoMeta").textContent = `${side.label}　兵力 ${unit.men}`;
+    let stateEl = $("infoState");
+    if (!stateEl) {
+      stateEl = document.createElement("div");
+      stateEl.id = "infoState";
+      stateEl.className = "state-badge info-state";
+      $("infoMeta").insertAdjacentElement("afterend", stateEl);
+    }
+    const obj = unitObjs[unit.id];
+    const state = obj?.state || stateForUnit(unit, H, obj?.alpha ?? 1, obj?.vel.lengthSq() || 0);
+    stateEl.textContent = state;
+    stateEl.dataset.state = state;
     $("infoNote").textContent = unit.note;
     $("infoCard").classList.add("show");
   }
@@ -585,16 +801,22 @@
   });
   setActiveChip(verifyMode ? "free" : "auto");
 
-  cfg.captions.forEach(caption => {
-    const left = ((caption.t - cfg.time.min) / (cfg.time.max - cfg.time.min) * 100);
+  const timelineEvents = cfg.timelineEvents || (cfg.captions || []).map(caption => ({
+    t: caption.t,
+    label: eventLabel(caption),
+    type: caption.eventType || inferEventType(caption)
+  }));
+  timelineEvents.forEach(event => {
+    const left = ((event.t - cfg.time.min) / (cfg.time.max - cfg.time.min) * 100);
     const tick = document.createElement("div");
     tick.className = "tick";
     tick.style.left = left + "%";
     wrap.appendChild(tick);
     const label = document.createElement("div");
     label.className = "event-label";
+    label.dataset.type = event.type || "phase";
     label.style.left = left + "%";
-    label.textContent = caption.title;
+    label.textContent = event.label || "転機";
     wrap.appendChild(label);
   });
 
@@ -715,15 +937,28 @@
       obj.mat.opacity = alpha;
       obj.poleMat.opacity = alpha;
       obj.flagMat.opacity = alpha;
+      obj.footprintMat.opacity = alpha * 0.14;
       obj.label.material.opacity = alpha;
       obj.group.visible = alpha > 0.02;
+
+      const state = stateForUnit(unit, H, alpha, obj.vel.lengthSq());
+      setUnitStateSprite(obj, state);
+      if (obj.stateLabel) obj.stateLabel.material.opacity = alpha;
+      updateStateBadge(unit.id, state);
+      if (cam.unit === unit.id) {
+        const stateEl = $("infoState");
+        if (stateEl) {
+          stateEl.textContent = state;
+          stateEl.dataset.state = state;
+        }
+      }
 
       const scatter = 1 + (1 - alpha) * 2.2;
       const wobble = performance.now() * 0.002;
       const rotY = obj.group.rotation.y;
       const cr = Math.cos(rotY);
       const sr = Math.sin(rotY);
-      for (let i = 0; i < unit.size; i++) {
+      for (let i = 0; i < obj.offsets.length; i++) {
         const [ox, oz, scale] = obj.offsets[i];
         const lx = ox * scatter;
         const lz = oz * scatter;
@@ -740,6 +975,10 @@
       const dist = camera.position.distanceTo(obj.pos);
       const scale = clamp(dist * 0.045, 7, 26);
       obj.label.scale.set(obj.label.userData.aspect * scale, scale, 1);
+      if (obj.stateLabel) {
+        const stateScale = clamp(dist * 0.028, 5.2, 14);
+        obj.stateLabel.scale.set(obj.stateLabel.userData.aspect * stateScale, stateScale, 1);
+      }
     }
 
     arrowObjs.forEach(({ item, arrow }) => {

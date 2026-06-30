@@ -261,6 +261,132 @@ canvas {
   text-shadow: 0 1px 2px #000;
 }
 
+#introCut {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--paper);
+  cursor: pointer;
+  background: #080909;
+  transition: opacity 700ms ease, visibility 700ms ease;
+}
+
+#introCut.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#introCut::before,
+#introCut::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#introCut::before {
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(6, 7, 7, 0.9) 0%, rgba(6, 7, 7, 0.56) 48%, rgba(6, 7, 7, 0.2) 100%),
+    linear-gradient(0deg, rgba(6, 7, 7, 0.96) 0%, rgba(6, 7, 7, 0.18) 52%, rgba(6, 7, 7, 0.32) 100%);
+}
+
+#introCut::after {
+  z-index: 2;
+  border: 1px solid rgba(217, 164, 65, 0.24);
+  background:
+    linear-gradient(90deg, rgba(217, 164, 65, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(242, 233, 214, 0.045) 1px, transparent 1px);
+  background-size: 68px 68px;
+  opacity: 0.35;
+}
+
+#introCut .intro-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  transform: scale(1.02);
+  filter: saturate(0.98) contrast(1.08) brightness(0.88);
+}
+
+#introCut.from-card .intro-bg {
+  animation: intro-card-open 900ms ease both;
+}
+
+#introCut .intro-inner {
+  position: relative;
+  z-index: 3;
+  width: min(660px, 88vw);
+  justify-self: start;
+  margin-left: clamp(18px, 8vw, 96px);
+  border: 1px solid rgba(217, 164, 65, 0.34);
+  border-left: 4px solid var(--gold);
+  background: rgba(8, 9, 9, 0.68);
+  padding: 24px 28px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42);
+}
+
+#introCut .intro-kicker {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.26em;
+}
+
+#introCut .intro-title {
+  margin-top: 8px;
+  color: #fff8e8;
+  font-family: var(--mincho);
+  font-size: 58px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 18px #000;
+}
+
+#introCut .intro-body {
+  margin-top: 16px;
+  max-width: 560px;
+  color: var(--paper-dim);
+  font-size: 15px;
+  line-height: 1.9;
+  letter-spacing: 0.08em;
+}
+
+#introCut .intro-cue {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  margin-top: 18px;
+  border: 1px solid rgba(217, 164, 65, 0.55);
+  background: rgba(42, 29, 8, 0.72);
+  color: var(--gold);
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+@keyframes intro-card-open {
+  from {
+    transform: scale(1.08);
+    filter: saturate(0.8) contrast(1.18) brightness(0.62);
+  }
+
+  to {
+    transform: scale(1.02);
+    filter: saturate(0.98) contrast(1.08) brightness(0.88);
+  }
+}
+
 #viewStrip {
   position: fixed;
   left: 0;
@@ -301,6 +427,14 @@ canvas {
   flex: 0 0 auto;
 }
 
+.chip-name {
+  display: inline-block;
+  max-width: 9em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chip.sys {
   border-color: var(--gold-dim);
   color: var(--gold);
@@ -311,6 +445,45 @@ canvas {
   border-color: var(--gold);
   background: rgba(70, 52, 16, 0.85);
   color: #fff;
+}
+
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: #efe6d2;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.state-badge[data-state="前進"] {
+  border-color: rgba(217, 164, 65, 0.62);
+  color: #ffd98a;
+}
+
+.state-badge[data-state="交戦"] {
+  border-color: rgba(210, 80, 64, 0.68);
+  color: #ffb1a2;
+}
+
+.state-badge[data-state="後退"] {
+  border-color: rgba(127, 166, 212, 0.62);
+  color: #cfe2ff;
+}
+
+.state-badge[data-state="壊滅"] {
+  border-color: rgba(190, 190, 190, 0.42);
+  color: #c3c3c3;
+}
+
+.info-state {
+  margin-top: 6px;
 }
 
 #timeline {
@@ -436,6 +609,30 @@ canvas {
   white-space: nowrap;
 }
 
+.event-label[data-type="clash"] {
+  border-color: rgba(217, 164, 65, 0.72);
+  color: #ffd98a;
+}
+
+.event-label[data-type="charge"] {
+  border-color: rgba(220, 105, 56, 0.72);
+  color: #ffbf8a;
+}
+
+.event-label[data-type="betrayal"] {
+  border-color: rgba(176, 106, 212, 0.72);
+  color: #e4c2ff;
+}
+
+.event-label[data-type="rout"] {
+  border-color: rgba(127, 166, 212, 0.72);
+  color: #cfe2ff;
+}
+
+.event-label[data-type="phase"] {
+  color: #e8d9b0;
+}
+
 #hourLabels {
   position: absolute;
   left: 0;
@@ -467,12 +664,31 @@ canvas {
     top: 70px;
   }
 
+  #introCut .intro-inner {
+    width: calc(100vw - 40px);
+    margin-left: 0;
+    padding: 18px 20px;
+  }
+
+  #introCut .intro-title {
+    font-size: 38px;
+    letter-spacing: 0.04em;
+  }
+
+  #introCut .intro-body {
+    font-size: 13px;
+    letter-spacing: 0.03em;
+  }
+
   #homeLink {
     top: 106px;
     right: 10px;
   }
 
   .event-label {
-    display: none;
+    top: -18px;
+    padding: 1px 3px;
+    font-size: 8px;
+    letter-spacing: 0.02em;
   }
 }

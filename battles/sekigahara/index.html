@@ -94,20 +94,46 @@
 
   /* ===== 導入カット ===== */
   #introCut{
-    position:fixed;inset:0;z-index:30;display:grid;place-items:center;
-    background:
-      radial-gradient(circle at 50% 42%,rgba(217,164,65,.12),transparent 34%),
-      linear-gradient(160deg,rgba(8,10,12,.96),rgba(18,14,8,.92));
-    color:var(--paper);cursor:pointer;transition:opacity .7s ease,visibility .7s ease;
+    position:fixed;inset:0;z-index:30;display:grid;place-items:center;overflow:hidden;
+    background:#080909;color:var(--paper);cursor:pointer;transition:opacity .7s ease,visibility .7s ease;
   }
   #introCut.hide{opacity:0;visibility:hidden;pointer-events:none}
+  #introCut::before,#introCut::after{content:"";position:absolute;inset:0;pointer-events:none}
+  #introCut::before{
+    z-index:1;background:
+      linear-gradient(90deg,rgba(6,7,7,.9),rgba(6,7,7,.58) 48%,rgba(6,7,7,.2)),
+      linear-gradient(0deg,rgba(6,7,7,.96),rgba(6,7,7,.16) 52%,rgba(6,7,7,.3));
+  }
+  #introCut::after{
+    z-index:2;border:1px solid rgba(217,164,65,.24);
+    background:
+      linear-gradient(90deg,rgba(217,164,65,.08) 1px,transparent 1px),
+      linear-gradient(180deg,rgba(242,233,214,.045) 1px,transparent 1px);
+    background-size:68px 68px;opacity:.35;
+  }
+  #introCut .intro-bg{
+    position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;
+    transform:scale(1.02);filter:saturate(.98) contrast(1.08) brightness(.88);
+  }
+  #introCut.from-card .intro-bg{animation:intro-card-open .9s ease both}
   #introCut .intro-inner{
-    width:min(620px,86vw);border-left:4px solid var(--gold);
-    box-sizing:border-box;padding:18px 26px;background:rgba(8,8,8,.42);backdrop-filter:blur(6px);
+    position:relative;z-index:3;justify-self:start;margin-left:8vw;
+    width:min(660px,88vw);border:1px solid rgba(217,164,65,.34);border-left:4px solid var(--gold);
+    box-sizing:border-box;padding:24px 28px;background:rgba(8,9,9,.68);backdrop-filter:blur(8px);
+    box-shadow:0 26px 70px rgba(0,0,0,.42);
   }
   #introCut .intro-kicker{color:var(--gold);font-size:12px;font-weight:800;letter-spacing:.28em}
-  #introCut .intro-title{font-family:var(--mincho);font-size:clamp(42px,8vw,78px);font-weight:800;line-height:1.12;letter-spacing:.1em;margin-top:8px}
-  #introCut .intro-meta{margin-top:14px;color:#d8ccb0;font-size:14px;line-height:1.9;letter-spacing:.12em;overflow-wrap:anywhere}
+  #introCut .intro-title{font-family:var(--mincho);font-size:58px;font-weight:800;line-height:1.1;letter-spacing:.08em;margin-top:8px;text-shadow:0 2px 18px #000}
+  #introCut .intro-meta{margin-top:16px;color:#d8ccb0;font-size:15px;line-height:1.9;letter-spacing:.08em;overflow-wrap:anywhere}
+  #introCut .intro-cue{
+    display:inline-flex;align-items:center;min-height:30px;margin-top:18px;
+    border:1px solid rgba(217,164,65,.55);background:rgba(42,29,8,.72);color:var(--gold);
+    padding:0 12px;font-size:11px;font-weight:800;letter-spacing:.16em;
+  }
+  @keyframes intro-card-open{
+    from{transform:scale(1.08);filter:saturate(.8) contrast(1.18) brightness(.62)}
+    to{transform:scale(1.02);filter:saturate(.98) contrast(1.08) brightness(.88)}
+  }
 
   /* ===== 視点チップ ===== */
   #viewStrip{
@@ -183,6 +209,10 @@
     color:#e8d9b0;padding:2px 5px;font-size:10px;font-weight:800;letter-spacing:.08em;
     white-space:nowrap;pointer-events:none;
   }
+  .event-label[data-type="clash"]{border-color:rgba(217,164,65,.72);color:#ffd98a}
+  .event-label[data-type="charge"]{border-color:rgba(220,105,56,.72);color:#ffbf8a}
+  .event-label[data-type="betrayal"]{border-color:rgba(176,106,212,.72);color:#e4c2ff}
+  .event-label[data-type="rout"]{border-color:rgba(127,166,212,.72);color:#cfe2ff}
   #hourLabels{
     position:absolute;left:0;right:0;top:100%;display:flex;justify-content:space-between;
     font-size:9px;color:#b9ac8e;pointer-events:none;letter-spacing:.05em;
@@ -219,9 +249,9 @@
     #caption .cap-body{font-size:13px}
     #infoCard{max-width:180px;top:70px}
     #homeLink{top:106px;right:10px}
-    .event-label{display:none}
-    #introCut .intro-inner{width:calc(100vw - 48px);padding:16px 20px}
-    #introCut .intro-title{font-size:40px;letter-spacing:.04em}
+    .event-label{top:-18px;padding:1px 3px;font-size:8px;letter-spacing:.02em}
+    #introCut .intro-inner{width:calc(100vw - 48px);margin-left:0;padding:16px 20px}
+    #introCut .intro-title{font-size:38px;letter-spacing:.04em}
     #introCut .intro-meta{font-size:12px;letter-spacing:.03em;word-break:break-all}
   }
   @media(prefers-reduced-motion:reduce){
@@ -231,10 +261,12 @@
 </head>
 <body>
 <div id="introCut" aria-hidden="true">
+  <img class="intro-bg" src="../../assets/intro/sekigahara-intro.jpg" alt="">
   <div class="intro-inner">
     <div class="intro-kicker">慶長五年 九月十五日</div>
     <div class="intro-title">決戦 関ヶ原</div>
     <div class="intro-meta">美濃国 関ヶ原 / 霧の開戦、小早川の寝返り、西軍総崩れ</div>
+    <div class="intro-cue" id="introCue">クリックで開戦</div>
   </div>
 </div>
 <div id="stage"></div>
@@ -836,6 +868,22 @@ function updateUnitStates(){
 }
 
 const track=$('track'),fill=$('fillBar'),wrap=$('trackWrap');
+function eventType(c){
+  const text=(c.title||'')+(c.body||'');
+  if(/裏切|寝返/.test(text))return 'betrayal';
+  if(/敗走|退き|崩|壊滅|決着/.test(text))return 'rout';
+  if(/突撃|突破|攻撃|総攻撃/.test(text))return 'charge';
+  if(/開戦|乱戦|激突|膠着/.test(text))return 'clash';
+  return 'phase';
+}
+function eventLabel(c){
+  const type=eventType(c);
+  if(type==='betrayal')return '裏切り';
+  if(type==='rout')return '敗走';
+  if(type==='charge')return '突撃';
+  if(type==='clash')return c.title==='開戦'?'開戦':'交戦';
+  return c.title;
+}
 CAPTIONS.forEach(c=>{
   const left=((c.t-8)/7*100);
   const tk=document.createElement('div');tk.className='tick';
@@ -843,7 +891,8 @@ CAPTIONS.forEach(c=>{
   wrap.appendChild(tk);
   const lb=document.createElement('div');lb.className='event-label';
   lb.style.left=left+'%';
-  lb.textContent=c.title;
+  lb.dataset.type=eventType(c);
+  lb.textContent=eventLabel(c);
   wrap.appendChild(lb);
 });
 const hl=$('hourLabels');
@@ -883,8 +932,12 @@ setTimeout(()=>{$('hint').style.opacity=0;},9000);
 const intro=$('introCut');
 function hideIntro(){intro.classList.add('hide');}
 if(verifyMode){hideIntro();}else{
+  if(query.get('entry')){
+    intro.classList.add('from-card');
+    $('introCue').textContent='合戦札から開幕';
+  }
   intro.addEventListener('click',hideIntro);
-  setTimeout(hideIntro,2800);
+  setTimeout(hideIntro,5200);
 }
 updateUnitStates();
 
