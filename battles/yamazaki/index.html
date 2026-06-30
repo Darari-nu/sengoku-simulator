@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>決戦 山崎 ― 3D俯瞰絵巻</title>
+  <meta name="description" content="山崎の戦いを3D俯瞰絵巻で体験。天王山、羽柴秀吉の攻勢、明智光秀の敗走を時刻スライダーで追える合戦シミュレーター。">
+  <meta property="og:title" content="決戦 山崎 ― 3D俯瞰絵巻">
+  <meta property="og:description" content="天王山をめぐる短期決戦と明智軍の崩壊を3D俯瞰で読む。">
+  <meta property="og:image" content="../../assets/ogp/sengoku-ogp.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles/battle-sim.css">
+</head>
+<body>
+  <div id="stage"></div>
+  <a id="homeLink" href="../../">合戦一覧</a>
+  <div id="titleBox">
+    <div class="logo"><div class="eyebrow" id="battleEyebrow"></div><h1 id="battleTitle"></h1></div>
+    <div id="clockBox"><div class="date" id="clockDate"></div><div class="time" id="clockTime"></div><div class="wakoku" id="clockWakoku"></div></div>
+  </div>
+  <div id="compass"><div id="compassNeedle">北</div></div>
+  <div id="infoCard"><div class="nm" id="infoName"></div><div class="meta" id="infoMeta"></div><div class="note" id="infoNote"></div></div>
+  <div id="hint">ドラッグで回転 ／ ホイール・ピンチで拡大</div>
+  <div id="caption"><div class="cap-title" id="capTitle"></div><div class="cap-body" id="capBody"></div></div>
+  <div id="viewStrip"></div>
+  <div id="timeline">
+    <button id="playBtn" aria-label="再生/停止">▮▮</button>
+    <button id="speedBtn">x1</button>
+    <div id="trackWrap"><div id="fillBar"></div><input id="track" type="range"><div id="hourLabels"></div></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    window.BATTLE_SCENE = {
+      title: "決戦 山崎",
+      eyebrow: "天王山",
+      dateLabel: "天正十年 六月十三日",
+      time: { min: 15, max: 19, step: 0.005, speeds: [0.07, 0.14, 0.28], speedLabels: ["x1", "x2", "x4"], wakoku: [[15, "申の刻"], [17, "酉の刻"], [19, "戌の刻"]] },
+      sky: { morning: 0xb9c4bd, noon: 0xa8b8c2, fog: 0xd8ded6, clearFog: 0xb8c2c9, fogDensity: 0.00012, verifyFogDensity: 0.0001, fogBoost: 0.0001, dayLength: 2.2 },
+      camera: { center: [0, 16, 0], focus: [0, 0], az: -2.34, polar: 1.0, radius: 430, verifyCenter: [0, 20, 0], verifyAz: -2.2, verifyPolar: 0.82, verifyRadius: 540, autoPolar: 0.96, autoRadius: 250 },
+      terrain: {
+        size: 780, segments: 156, base: 2, roughX: 0.037, roughZ: 0.04, roughAmp: 2.1, longAmp: 2.2,
+        colors: { low: 0x77875d, mid: 0x516b45, high: 0x3c5338, road: 0xc7b784, water: 0x4e7498 },
+        bumps: [
+          { x: -70, z: -112, r: 96, amp: 58 }, { x: -150, z: -146, r: 130, amp: 46 },
+          { x: 110, z: 140, r: 110, amp: 22 }, { x: 210, z: -40, r: 130, amp: 18 },
+          { x: -220, z: 88, r: 150, amp: 20 }
+        ],
+        roads: [
+          { width: 8, points: [[-280, 42], [-160, 28], [-42, 10], [72, 4], [250, 0]] },
+          { width: 6, points: [[-128, -122], [-80, -64], [-30, -10], [40, 10]] }
+        ],
+        rivers: [{ width: 16, points: [[-280, 170], [-140, 138], [18, 128], [180, 150], [290, 190]] }]
+      },
+      sides: {
+        hashiba: { label: "羽柴軍", color: 0xd9a441, labelColor: "#ffd98a", flagBg: "#171717", flagStripe: "#d9a441", flagText: "#e8d9b0" },
+        akechi: { label: "明智軍", color: 0x82add9, labelColor: "#d4e7ff", flagBg: "#f4f1e6", flagStripe: "#82add9", flagText: "#202428" },
+        neutral: { label: "地形", color: 0xb9c4cf, labelColor: "#e8eef2", flagBg: "#65717a", flagStripe: "#b9c4cf", flagText: "#111" }
+      },
+      places: [
+        { name: "天王山", x: -78, z: -110, color: "#f1d88c" },
+        { name: "山崎", x: -20, z: 8 },
+        { name: "淀川", x: 20, z: 144, opacity: 0.82 },
+        { name: "勝竜寺城", x: 202, z: 0, scale: 8, opacity: 0.8 },
+        { name: "西国街道", x: -8, z: 32, scale: 8, opacity: 0.75 }
+      ],
+      units: [
+        { id: "hideyoshi", name: "羽柴秀吉", side: "hashiba", men: "約20,000", note: "西国街道から山崎へ入り、明智本隊を正面から圧迫する。", path: [[15, -220, 34], [16.2, -120, 22], [17, -22, 10], [18.2, 44, 8], [19, 72, 8]], size: 68, initialFacing: [1, 0] },
+        { id: "ikeda", name: "池田恒興", side: "hashiba", men: "約5,000", note: "北西から天王山麓へ進み、明智右翼へ圧力をかける。", path: [[15, -198, -38], [16, -120, -70], [17, -54, -72], [19, -20, -62]], size: 34, initialFacing: [1, -0.1] },
+        { id: "nakagawa", name: "中川清秀", side: "hashiba", men: "約2,500", note: "中央で秀吉本隊と連動し、明智軍の正面を押す。", path: [[15, -180, 78], [16.5, -92, 46], [17.5, -12, 26], [19, 42, 24]], size: 28, initialFacing: [1, -0.1] },
+        { id: "tennozan_guard", name: "天王山隊", side: "hashiba", men: "約2,000", note: "山側を押さえ、戦場北側の圧力を作る。", path: [[15, -130, -134], [16.2, -88, -118], [19, -70, -108]], size: 24, initialFacing: [1, 0.1] },
+        { id: "mitsuhide", name: "明智光秀", side: "akechi", men: "約16,000", note: "東側で迎え撃つが、右翼が崩れて勝竜寺城方面へ後退する。", path: [[15, 112, 10], [17.4, 88, 10], [18.2, 142, 0], [19, 206, -4]], fade: [18.45, 19], size: 58, initialFacing: [-1, 0] },
+        { id: "akechi_right", name: "明智右翼", side: "akechi", men: "約5,000", note: "天王山東麓で羽柴軍の圧力を受け、先に崩れる。", path: [[15, 78, -64], [16.5, 42, -58], [17.5, 64, -44], [18.4, 142, -32], [19, 202, -20]], fade: [17.9, 18.8], size: 36, initialFacing: [-1, 0.1] }
+      ],
+      arrows: [
+        { t0: 15.6, t1: 17.2, from: [-205, 32], to: [36, 10], color: 0xffd35c, head: 20, width: 13 },
+        { t0: 16, t1: 17.6, from: [-180, -44], to: [-48, -74], color: 0xffd35c, head: 17, width: 10 },
+        { t0: 17.8, t1: 19, from: [82, -44], to: [204, -12], color: 0x9fc5f0, head: 17, width: 10 },
+        { t0: 18.1, t1: 19, from: [110, 8], to: [214, -4], color: 0x9fc5f0, head: 18, width: 11 }
+      ],
+      captions: [
+        { t: 15, title: "布陣", body: "羽柴軍は西、明智軍は東。天王山を見上げる山崎で対峙", focus: [0, 0], duration: 0.78 },
+        { t: 16, title: "天王山", body: "羽柴軍、天王山周辺へ圧力をかける", focus: [-80, -92], duration: 0.82 },
+        { t: 17, title: "攻勢", body: "秀吉本隊と中川隊、明智本隊へ迫る", focus: [20, 12], duration: 0.82 },
+        { t: 18, title: "崩れ", body: "明智右翼が崩れ、光秀本隊も東へ退く", focus: [104, -18], duration: 0.84 },
+        { t: 18.6, title: "敗走", body: "明智軍、勝竜寺城方面へ敗走する", focus: [176, -10], duration: 0.78 }
+      ],
+      weather: { fogCount: 5, fogSize: 220, fogPeak: time => Math.max(0, Math.min(1, (19 - time) / 4)) * 0.08, fogOpacityScale: 0.05 },
+      captionDuration: 0.82
+    };
+  </script>
+  <script src="../../scripts/battle-sim.js"></script>
+</body>
+</html>

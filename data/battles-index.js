@@ -46,5 +46,53 @@ window.BATTLES = [
     highlight: "啄木鳥戦法、妻女山別働隊、霧中の遭遇戦を俯瞰で追う。",
     tags: ["霧", "別働隊", "啄木鳥戦法", "遭遇戦"],
     visual: "kawanakajima"
+  },
+  {
+    id: "nagashino",
+    title: "長篠の戦い",
+    subtitle: "柵と鉄砲の防御戦",
+    period: "天正3年 / 1575年",
+    date: "天正三年五月二十一日",
+    location: "三河国 設楽原",
+    route: "./battles/nagashino/",
+    status: "published",
+    statusLabel: "公開中",
+    schedule: "第肆回",
+    sides: "織田信長・徳川家康 vs 武田勝頼",
+    highlight: "馬防柵、連吾川、鉄砲隊、武田騎馬の突撃失敗を時刻スライダーで追う。",
+    tags: ["馬防柵", "鉄砲", "騎馬突撃", "防御陣地"],
+    visual: "nagashino"
+  },
+  {
+    id: "yamazaki",
+    title: "山崎の戦い",
+    subtitle: "天王山の短期決戦",
+    period: "天正10年 / 1582年",
+    date: "天正十年六月十三日",
+    location: "山城国 山崎",
+    route: "./battles/yamazaki/",
+    status: "published",
+    statusLabel: "公開中",
+    schedule: "第伍回",
+    sides: "羽柴秀吉 vs 明智光秀",
+    highlight: "中国大返し後の秀吉軍、天王山周辺の圧力、明智軍の崩壊を俯瞰で読む。",
+    tags: ["天王山", "短期決戦", "追撃", "敗走"],
+    visual: "yamazaki"
+  },
+  {
+    id: "mikatagahara",
+    title: "三方ヶ原の戦い",
+    subtitle: "徳川敗走の台地戦",
+    period: "元亀3年 / 1573年",
+    date: "元亀三年十二月二十二日",
+    location: "遠江国 三方ヶ原",
+    route: "./battles/mikatagahara/",
+    status: "published",
+    statusLabel: "公開中",
+    schedule: "第陸回",
+    sides: "武田信玄 vs 徳川家康",
+    highlight: "武田軍の圧迫、徳川軍の野戦出撃、浜松城への敗走を追う。",
+    tags: ["台地", "圧迫", "敗走", "浜松城"],
+    visual: "mikatagahara"
   }
 ];

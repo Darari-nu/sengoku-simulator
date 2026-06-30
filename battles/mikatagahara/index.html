@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>決戦 三方ヶ原 ― 3D俯瞰絵巻</title>
+  <meta name="description" content="三方ヶ原の戦いを3D俯瞰絵巻で体験。武田軍の圧迫、徳川軍の野戦出撃、浜松城への敗走を時刻スライダーで追える合戦シミュレーター。">
+  <meta property="og:title" content="決戦 三方ヶ原 ― 3D俯瞰絵巻">
+  <meta property="og:description" content="武田軍の圧迫と徳川軍の敗走を、台地と浜松城の位置関係から3D俯瞰で読む。">
+  <meta property="og:image" content="../../assets/ogp/sengoku-ogp.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles/battle-sim.css">
+</head>
+<body>
+  <div id="stage"></div>
+  <a id="homeLink" href="../../">合戦一覧</a>
+  <div id="titleBox">
+    <div class="logo"><div class="eyebrow" id="battleEyebrow"></div><h1 id="battleTitle"></h1></div>
+    <div id="clockBox"><div class="date" id="clockDate"></div><div class="time" id="clockTime"></div><div class="wakoku" id="clockWakoku"></div></div>
+  </div>
+  <div id="compass"><div id="compassNeedle">北</div></div>
+  <div id="infoCard"><div class="nm" id="infoName"></div><div class="meta" id="infoMeta"></div><div class="note" id="infoNote"></div></div>
+  <div id="hint">ドラッグで回転 ／ ホイール・ピンチで拡大</div>
+  <div id="caption"><div class="cap-title" id="capTitle"></div><div class="cap-body" id="capBody"></div></div>
+  <div id="viewStrip"></div>
+  <div id="timeline">
+    <button id="playBtn" aria-label="再生/停止">▮▮</button>
+    <button id="speedBtn">x1</button>
+    <div id="trackWrap"><div id="fillBar"></div><input id="track" type="range"><div id="hourLabels"></div></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    window.BATTLE_SCENE = {
+      title: "決戦 三方ヶ原",
+      eyebrow: "敗走台地",
+      dateLabel: "元亀三年 十二月二十二日",
+      time: { min: 14, max: 18.2, step: 0.005, speeds: [0.07, 0.14, 0.28], speedLabels: ["x1", "x2", "x4"], wakoku: [[14, "未の刻"], [16, "申の刻"], [18, "酉の刻"]] },
+      sky: { morning: 0xb9b1a2, noon: 0xa4a6a0, fog: 0xd8d4ca, clearFog: 0xb7b6ad, fogDensity: 0.00012, verifyFogDensity: 0.0001, fogBoost: 0.00012, dayLength: 2.4 },
+      camera: { center: [8, 16, 0], focus: [0, 0], az: -2.28, polar: 1.0, radius: 440, verifyCenter: [6, 20, 0], verifyAz: -2.12, verifyPolar: 0.82, verifyRadius: 550, autoPolar: 0.97, autoRadius: 258 },
+      terrain: {
+        size: 820, segments: 164, base: 4, roughX: 0.03, roughZ: 0.036, roughAmp: 2.4, longAmp: 2.2,
+        colors: { low: 0x8c875c, mid: 0x6d6f45, high: 0x565b3a, road: 0xc5b27e, water: 0x536f85 },
+        bumps: [
+          { x: -88, z: -20, r: 210, amp: 26 }, { x: 52, z: -70, r: 190, amp: 28 },
+          { x: 194, z: 94, r: 140, amp: 18 }, { x: -220, z: 120, r: 120, amp: 20 },
+          { x: -260, z: -150, r: 135, amp: 18 }
+        ],
+        roads: [
+          { width: 8, points: [[-238, -150], [-146, -82], [-54, -28], [38, 34], [150, 120], [226, 190]] },
+          { width: 6, points: [[-42, 190], [12, 116], [42, 58], [62, -20]] }
+        ],
+        rivers: [{ width: 10, points: [[-300, 210], [-180, 190], [-32, 204], [140, 230]] }]
+      },
+      sides: {
+        takeda: { label: "武田軍", color: 0xd9a441, labelColor: "#ffd98a", flagBg: "#171717", flagStripe: "#d9a441", flagText: "#e8d9b0" },
+        tokugawa: { label: "徳川軍", color: 0x82add9, labelColor: "#d4e7ff", flagBg: "#f4f1e6", flagStripe: "#82add9", flagText: "#202428" },
+        neutral: { label: "地形", color: 0xb9c4cf, labelColor: "#e8eef2", flagBg: "#65717a", flagStripe: "#b9c4cf", flagText: "#111" }
+      },
+      places: [
+        { name: "三方ヶ原台地", x: -28, z: -24, color: "#f1d88c" },
+        { name: "浜松城", x: 176, z: 158, scale: 9 },
+        { name: "姫街道", x: -48, z: -38, scale: 8, opacity: 0.75 },
+        { name: "犀ヶ崖", x: 82, z: 66, scale: 8, opacity: 0.75 },
+        { name: "遠州平野", x: 48, z: 202, scale: 8, opacity: 0.72 }
+      ],
+      units: [
+        { id: "shingen", name: "武田信玄", side: "takeda", men: "約25,000", note: "北西から台地へ進み、徳川軍を正面から圧迫する。", path: [[14, -214, -118], [15, -118, -64], [16.2, -34, -18], [18.2, 18, 14]], size: 68, initialFacing: [1, 0.4] },
+        { id: "takeda_vanguard", name: "武田先鋒", side: "takeda", men: "約8,000", note: "徳川軍正面へ前進し、戦線を押し込む。", path: [[14, -184, -42], [15.1, -82, -8], [16, -6, 30], [18.2, 64, 76]], size: 48, initialFacing: [1, 0.3] },
+        { id: "yamagata", name: "山県昌景", side: "takeda", men: "約5,000", note: "北側から徳川軍の側面へ圧力をかける。", path: [[14, -92, -166], [15.3, -38, -88], [16.2, 18, -16], [18.2, 88, 48]], size: 36, initialFacing: [0.6, 1] },
+        { id: "ieyasu", name: "徳川家康", side: "tokugawa", men: "約11,000", note: "浜松城方面から出撃するが、武田軍に押されて城へ敗走する。", path: [[14, 170, 156], [15, 92, 92], [16, 34, 52], [17, 96, 104], [18.2, 178, 158]], fade: [17.7, 18.2], size: 54, initialFacing: [-1, -0.7] },
+        { id: "honda", name: "本多忠勝", side: "tokugawa", men: "約1,500", note: "殿として中央で抗戦し、家康本隊を逃がす。", path: [[14, 132, 118], [15.2, 62, 68], [16.4, 18, 54], [17.5, 94, 120], [18.2, 150, 146]], size: 24, initialFacing: [-1, -0.4] },
+        { id: "hamamatsu", name: "浜松城守備", side: "tokugawa", men: "約2,000", note: "浜松城を保持し、敗走する徳川軍の帰還点となる。", path: [[14, 206, 178], [18.2, 206, 178]], size: 22, initialFacing: [-1, -0.5] }
+      ],
+      arrows: [
+        { t0: 14.3, t1: 16.6, from: [-210, -112], to: [18, 28], color: 0xffd35c, head: 22, width: 14 },
+        { t0: 15, t1: 16.8, from: [-88, -156], to: [36, 4], color: 0xffd35c, head: 18, width: 11 },
+        { t0: 14.4, t1: 15.5, from: [172, 156], to: [36, 52], color: 0x9fc5f0, head: 18, width: 11 },
+        { t0: 16.7, t1: 18.2, from: [42, 58], to: [184, 158], color: 0x9fc5f0, head: 22, width: 14 }
+      ],
+      captions: [
+        { t: 14, title: "進軍", body: "武田軍、三方ヶ原台地へ進む。徳川軍は浜松城方面から出る", focus: [0, 24], duration: 0.84 },
+        { t: 15, title: "接触", body: "徳川軍、野戦に出て武田軍と接触する", focus: [50, 52], duration: 0.82 },
+        { t: 16, title: "圧迫", body: "武田先鋒と山県隊、正面と側面から徳川軍を押す", focus: [18, 30], duration: 0.84 },
+        { t: 17, title: "崩れ", body: "徳川軍、持ちこたえられず浜松城方面へ向きを変える", focus: [88, 104], duration: 0.86 },
+        { t: 18, title: "敗走", body: "家康、浜松城へ敗走。武田軍が台地を制する", focus: [158, 146], duration: 0.82 }
+      ],
+      weather: { fogCount: 5, fogSize: 230, fogPeak: time => Math.max(0, Math.min(1, (18.2 - time) / 4.2)) * 0.1, fogOpacityScale: 0.06 },
+      captionDuration: 0.84
+    };
+  </script>
+  <script src="../../scripts/battle-sim.js"></script>
+</body>
+</html>

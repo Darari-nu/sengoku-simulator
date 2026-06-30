@@ -438,6 +438,41 @@ dd {
   background: rgba(228, 232, 226, 0.12);
 }
 
+.battle-visual.nagashino {
+  background:
+    linear-gradient(170deg, rgba(68, 94, 47, 0.94), rgba(18, 23, 14, 0.92)),
+    #253518;
+}
+
+.battle-visual.nagashino .route-line {
+  top: 58%;
+  height: 5px;
+  background: repeating-linear-gradient(90deg, rgba(222, 190, 112, 0.8) 0 10px, transparent 10px 16px);
+}
+
+.battle-visual.yamazaki {
+  background:
+    linear-gradient(170deg, rgba(54, 76, 54, 0.96), rgba(18, 20, 17, 0.92)),
+    #243323;
+}
+
+.battle-visual.yamazaki .ridge-a {
+  width: 72%;
+  height: 72px;
+  transform: rotate(-18deg);
+}
+
+.battle-visual.mikatagahara {
+  background:
+    linear-gradient(170deg, rgba(84, 83, 52, 0.94), rgba(25, 22, 15, 0.92)),
+    #38341f;
+}
+
+.battle-visual.mikatagahara .route-line {
+  transform: rotate(18deg);
+  background: rgba(199, 177, 116, 0.7);
+}
+
 .notes-inner {
   max-width: 900px;
   border-top: 1px solid var(--gold-soft);
@@ -567,6 +602,11 @@ dd {
 
   .brand strong {
     font-size: 16px;
+  }
+
+  .front-copy h1 {
+    font-size: 34px;
+    line-height: 1.25;
   }
 
   .featured-copy {
