@@ -290,28 +290,53 @@ const requestedTime=Number.parseFloat(query.get('t')||'');
 const initialTime=Number.isFinite(requestedTime)?clamp(requestedTime,8,15):8;
 const weatherScale=query.get('weather')==='0'?0:1;
 
-function bump(x,z,cx,cz,r,amp){const d=((x-cx)**2+(z-cz)**2)/(r*r);return amp*Math.exp(-d);}
-function rough(x,z){return Math.sin(x*0.05)*Math.cos(z*0.045)*1.6+Math.sin(x*0.013+z*0.017)*2.4;}
-function terrainH(x,z){
-  let h=2+rough(x,z);
-  h+=bump(x,z,-150,-140, 70, 26);
-  h+=bump(x,z,-260,-230,200, 95);
-  h+=bump(x,z, -60,-230,160, 55);
-  h+=bump(x,z,-140, 150, 78, 52);
-  h+=bump(x,z,-260, 120,140, 70);
-  h+=bump(x,z, 190,  40, 55, 18);
-  h+=bump(x,z, 215, 175,120, 72);
-  h+=bump(x,z,  40, 260,170, 60);
-  h+=bump(x,z, 280, -90,160, 50);
-  h+=bump(x,z,-200,  20, 60, 22);
-  return h;
+const TERRAIN_RIDGES=[
+  {id:'sasao',x:-152,z:-146,rx:92,rz:58,rot:-0.4,amp:54},
+  {id:'tenma',x:-206,z:30,rx:86,rz:62,rot:0.46,amp:42},
+  {id:'matsuo',x:-142,z:156,rx:104,rz:72,rot:-0.72,amp:76},
+  {id:'momokubari',x:188,z:38,rx:68,rz:45,rot:-0.12,amp:30},
+  {id:'nangu',x:220,z:188,rx:146,rz:88,rot:0.28,amp:88},
+  {id:'ibuki',x:-282,z:-230,rx:210,rz:142,rot:-0.3,amp:92},
+  {id:'north',x:20,z:-260,rx:225,rz:100,rot:0.08,amp:54},
+  {id:'east',x:302,z:-88,rx:180,rz:116,rot:0.18,amp:52}
+];
+const ROAD_LINES=[
+  {name:'中山道',width:6.8,points:[[-340,12],[-245,6],[-160,8],[-78,20],[18,22],[126,28],[318,36]]},
+  {name:'北国街道',width:5.4,points:[[-214,-190],[-176,-126],[-126,-68],[-66,-8]]},
+  {name:'伊勢街道',width:5.2,points:[[16,24],[58,82],[110,132],[182,206]]}
+];
+const RIVER_LINES=[
+  {name:'藤古川',width:3.7,points:[[-280,-36],[-202,-30],[-126,-36],[-42,-24],[58,-28],[170,-18],[278,-24]]}
+];
+
+function ridgeH(x,z,r){
+  const dx=x-r.x,dz=z-r.z,ca=Math.cos(r.rot),sa=Math.sin(r.rot);
+  const ux=dx*ca+dz*sa,uz=-dx*sa+dz*ca;
+  const d=(ux*ux)/(r.rx*r.rx)+(uz*uz)/(r.rz*r.rz);
+  return r.amp*Math.exp(-d);
 }
-function roadDist(x,z){
-  const rz=14+Math.sin(x*0.012)*12;
-  let d=Math.abs(z-rz);
-  for(let i=0;i<=10;i++){const s=i/10;d=Math.min(d,Math.hypot(x-(-40-200*s),z-(14-160*s)));}
+function rough(x,z){return Math.sin(x*0.046)*Math.cos(z*0.039)*1.15+Math.sin(x*0.013+z*0.017)*1.9;}
+function terrainH(x,z){
+  let h=4+rough(x,z);
+  TERRAIN_RIDGES.forEach(r=>{h+=ridgeH(x,z,r);});
+  const basin=Math.exp(-((z-16)*(z-16))/(104*104))*Math.exp(-((x+22)*(x+22))/(330*330));
+  h-=basin*13;
+  return Math.max(0.8,h);
+}
+function segmentDist(x,z,a,b){
+  const ax=a[0],az=a[1],bx=b[0],bz=b[1];
+  const vx=bx-ax,vz=bz-az;
+  const t=clamp(((x-ax)*vx+(z-az)*vz)/(vx*vx+vz*vz),0,1);
+  return Math.hypot(x-(ax+vx*t),z-(az+vz*t));
+}
+function pathDist(x,z,points){
+  let d=Infinity;
+  for(let i=0;i<points.length-1;i++)d=Math.min(d,segmentDist(x,z,points[i],points[i+1]));
   return d;
 }
+function minPathDist(x,z,lines){return lines.reduce((d,l)=>Math.min(d,pathDist(x,z,l.points)),Infinity);}
+function roadDist(x,z){return minPathDist(x,z,ROAD_LINES);}
+function riverDist(x,z){return minPathDist(x,z,RIVER_LINES);}
 
 const stage=document.getElementById('stage');
 const renderer=new THREE.WebGLRenderer({antialias:true});
@@ -332,32 +357,89 @@ const sun=new THREE.DirectionalLight(0xfff2dd,1.0);scene.add(sun);
   geo.rotateX(-Math.PI/2);
   const pos=geo.attributes.position;
   const colors=new Float32Array(pos.count*3);
-  const cLow=new THREE.Color(0x7f9456);
-  const cMid=new THREE.Color(0x55703f);
-  const cHigh=new THREE.Color(0x3c5236);
-  const cPeak=new THREE.Color(0x5d5a4c);
+  const cLow=new THREE.Color(0x8b9f62);
+  const cField=new THREE.Color(0x9aa56b);
+  const cMid=new THREE.Color(0x5f7846);
+  const cHigh=new THREE.Color(0x3f5a3a);
+  const cPeak=new THREE.Color(0x686451);
   const cRoad=new THREE.Color(0xcbb98c);
+  const cWet=new THREE.Color(0x617f78);
   const tmp=new THREE.Color();
   for(let i=0;i<pos.count;i++){
     const x=pos.getX(i),z=pos.getZ(i);
     const h=terrainH(x,z);
     pos.setY(i,h);
-    const n=(Math.sin(x*0.21)*Math.cos(z*0.19)+1)/2*0.12;
-    if(h<10) tmp.copy(cLow).lerp(cMid,h/10);
-    else if(h<35) tmp.copy(cMid).lerp(cHigh,(h-10)/25);
-    else tmp.copy(cHigh).lerp(cPeak,clamp((h-35)/55,0,1));
+    const n=(Math.sin(x*0.21)*Math.cos(z*0.19)+1)/2*0.1;
+    if(h<8) tmp.copy(cLow).lerp(cField,(Math.sin(x*0.07)*Math.sin(z*0.09)+1)*0.18);
+    else if(h<24) tmp.copy(cField).lerp(cMid,(h-8)/16);
+    else if(h<56) tmp.copy(cMid).lerp(cHigh,(h-24)/32);
+    else tmp.copy(cHigh).lerp(cPeak,clamp((h-56)/72,0,1));
     tmp.offsetHSL(0,0,n-0.06);
-    if(h<14){
-      const rd=roadDist(x,z);
-      if(rd<7) tmp.lerp(cRoad,smooth(1-rd/7)*0.85);
-    }
+    const rv=riverDist(x,z);
+    if(rv<11)tmp.lerp(cWet,smooth(1-rv/11)*0.35);
+    const rd=roadDist(x,z);
+    if(rd<12) tmp.lerp(cRoad,smooth(1-rd/12)*0.72);
     colors[i*3]=tmp.r;colors[i*3+1]=tmp.g;colors[i*3+2]=tmp.b;
   }
+  pos.needsUpdate=true;
   geo.computeVertexNormals();
   geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
   const mat=new THREE.MeshLambertMaterial({vertexColors:true});
   scene.add(new THREE.Mesh(geo,mat));
 })();
+
+function addPathRibbon(line,color,opacity,yOffset=1.15){
+  const pts=line.points;
+  const verts=[],uvs=[],idx=[];
+  let dist=0;
+  for(let i=0;i<pts.length;i++){
+    const prev=pts[Math.max(0,i-1)],cur=pts[i],next=pts[Math.min(pts.length-1,i+1)];
+    if(i>0)dist+=Math.hypot(cur[0]-pts[i-1][0],cur[1]-pts[i-1][1]);
+    const tx=next[0]-prev[0],tz=next[1]-prev[1];
+    const len=Math.hypot(tx,tz)||1;
+    const sx=-tz/len,sz=tx/len,w=line.width;
+    const y=terrainH(cur[0],cur[1])+yOffset;
+    verts.push(cur[0]+sx*w,y,cur[1]+sz*w, cur[0]-sx*w,y,cur[1]-sz*w);
+    uvs.push(0,dist/28,1,dist/28);
+    if(i<pts.length-1){const b=i*2;idx.push(b,b+1,b+2,b+1,b+3,b+2);}
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(verts),3));
+  geo.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(uvs),2));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false,side:THREE.DoubleSide});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.renderOrder=1;
+  scene.add(mesh);
+  return mesh;
+}
+ROAD_LINES.forEach(line=>addPathRibbon(line,0xd4bf8c,0.5,1.1));
+RIVER_LINES.forEach(line=>addPathRibbon(line,0x5f89a1,0.4,1.25));
+
+function addContours(){
+  const mat=new THREE.LineBasicMaterial({color:0xe2d0a1,transparent:true,opacity:0.28,depthWrite:false});
+  TERRAIN_RIDGES
+    .filter(r=>['sasao','tenma','matsuo','momokubari','nangu'].includes(r.id))
+    .forEach(r=>{
+      [0.38,0.52,0.66,0.8,0.94].forEach((scale,ring)=>{
+        const pts=[];
+        const steps=112,ca=Math.cos(r.rot),sa=Math.sin(r.rot);
+        for(let i=0;i<steps;i++){
+          const a=i/steps*Math.PI*2;
+          const ux=Math.cos(a)*r.rx*scale,uz=Math.sin(a)*r.rz*scale;
+          const x=r.x+ux*ca-uz*sa,z=r.z+ux*sa+uz*ca;
+          pts.push(x,terrainH(x,z)+1.55+ring*0.08,z);
+        }
+        const geo=new THREE.BufferGeometry();
+        geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pts),3));
+        const line=new THREE.LineLoop(geo,mat);
+        line.renderOrder=2;
+        scene.add(line);
+      });
+    });
+}
+addContours();
 
 function makeTextSprite(text,opt={}){
   const fs=opt.fs||44, pad=18;
@@ -381,10 +463,11 @@ function makeTextSprite(text,opt={}){
 }
 const placeNames=[
   ['笹尾山',-150,-140],['松尾山',-140,150],['桃配山',190,40],
-  ['南宮山',215,175],['天満山',-200,20],['中山道',60,22],['北国街道',-160,-90]
+  ['南宮山',215,175],['天満山',-200,20],['中山道',60,22],['北国街道',-160,-90],
+  ['伊勢街道',96,126],['藤古川',-40,-32]
 ];
 placeNames.forEach(([nm,x,z])=>{
-  const sp=makeTextSprite(nm,{fs:40,color:'#e8dfc8',stroke:5,weight:500});
+  const sp=makeTextSprite(nm,{fs:38,color:nm.includes('川')?'#d5ecff':'#e8dfc8',stroke:5,weight:500});
   sp.position.set(x,terrainH(x,z)+16,z);
   sp.scale.set(sp.userData.aspect*10,10,1);
   sp.material.opacity=0.85;
