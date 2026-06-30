@@ -32,6 +32,20 @@
     return item.amp * Math.exp(-d);
   }
 
+  function ridge(x, z, item) {
+    const dx = x - item.x;
+    const dz = z - item.z;
+    const rot = item.rot || 0;
+    const ca = Math.cos(rot);
+    const sa = Math.sin(rot);
+    const ux = dx * ca + dz * sa;
+    const uz = -dx * sa + dz * ca;
+    const rx = item.rx || item.r || 100;
+    const rz = item.rz || item.r || 80;
+    const d = (ux * ux) / (rx * rx) + (uz * uz) / (rz * rz);
+    return (item.amp || 0) * Math.exp(-d);
+  }
+
   function terrainH(x, z) {
     const terrain = cfg.terrain;
     let h = terrain.base || 0;
@@ -40,7 +54,13 @@
     (terrain.bumps || []).forEach(item => {
       h += bump(x, z, item);
     });
-    return h;
+    (terrain.ridges || []).forEach(item => {
+      h += ridge(x, z, item);
+    });
+    (terrain.basins || []).forEach(item => {
+      h -= ridge(x, z, item);
+    });
+    return Math.max(0.8, h);
   }
 
   function distanceToSegment(px, pz, ax, az, bx, bz) {
@@ -88,8 +108,10 @@
     const pos = geo.attributes.position;
     const colors = new Float32Array(pos.count * 3);
     const low = toColor(terrain.colors.low);
+    const field = toColor(terrain.colors.field || terrain.colors.low);
     const mid = toColor(terrain.colors.mid);
     const high = toColor(terrain.colors.high);
+    const peak = toColor(terrain.colors.peak || terrain.colors.high);
     const road = toColor(terrain.colors.road || 0xbda878);
     const water = toColor(terrain.colors.water || 0x526f8f);
     const tmp = new THREE.Color();
@@ -100,8 +122,10 @@
       const h = terrainH(x, z);
       pos.setY(i, h);
 
-      tmp.copy(low).lerp(mid, clamp(h / 24, 0, 1));
-      if (h > 24) tmp.lerp(high, clamp((h - 24) / 65, 0, 1));
+      if (h < 10) tmp.copy(low).lerp(field, clamp(h / 10, 0, 1));
+      else if (h < 28) tmp.copy(field).lerp(mid, clamp((h - 10) / 18, 0, 1));
+      else if (h < 66) tmp.copy(mid).lerp(high, clamp((h - 28) / 38, 0, 1));
+      else tmp.copy(high).lerp(peak, clamp((h - 66) / 72, 0, 1));
       tmp.offsetHSL(0, 0, Math.sin(x * 0.19) * Math.cos(z * 0.17) * 0.045);
 
       (terrain.roads || []).forEach(item => {
@@ -118,12 +142,101 @@
       colors[i * 3 + 2] = tmp.b;
     }
 
+    pos.needsUpdate = true;
     geo.computeVertexNormals();
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     scene.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true })));
   }
 
   buildTerrain();
+
+  function addPathRibbon(item, color, opacity, yOffset, widthScale) {
+    const points = item.points || [];
+    if (points.length < 2) return;
+    const width = item.ribbonWidth || (item.width || 6) * widthScale;
+    const verts = [];
+    const uvs = [];
+    const indices = [];
+    let dist = 0;
+    for (let i = 0; i < points.length; i++) {
+      const prev = points[Math.max(0, i - 1)];
+      const current = points[i];
+      const next = points[Math.min(points.length - 1, i + 1)];
+      if (i > 0) dist += Math.hypot(current[0] - points[i - 1][0], current[1] - points[i - 1][1]);
+      const tx = next[0] - prev[0];
+      const tz = next[1] - prev[1];
+      const len = Math.hypot(tx, tz) || 1;
+      const sx = -tz / len;
+      const sz = tx / len;
+      const y = terrainH(current[0], current[1]) + yOffset;
+      verts.push(
+        current[0] + sx * width, y, current[1] + sz * width,
+        current[0] - sx * width, y, current[1] - sz * width
+      );
+      uvs.push(0, dist / 26, 1, dist / 26);
+      if (i < points.length - 1) {
+        const base = i * 2;
+        indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(verts), 3));
+    geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(uvs), 2));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshBasicMaterial({
+      color: item.color || color,
+      transparent: true,
+      opacity: item.opacity ?? opacity,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = item.renderOrder || 1;
+    scene.add(mesh);
+  }
+
+  function addContours() {
+    const ridges = (cfg.terrain.ridges || []).filter(item => item.contours !== false);
+    if (!ridges.length) return;
+    const mat = new THREE.LineBasicMaterial({
+      color: cfg.terrain.contourColor || 0xe2d0a1,
+      transparent: true,
+      opacity: cfg.terrain.contourOpacity ?? 0.24,
+      depthWrite: false
+    });
+    const defaultLevels = cfg.terrain.contourLevels || [0.4, 0.55, 0.7, 0.85];
+    ridges.forEach(item => {
+      const levels = item.contourLevels || defaultLevels;
+      const rot = item.rot || 0;
+      const ca = Math.cos(rot);
+      const sa = Math.sin(rot);
+      const rx = item.rx || item.r || 100;
+      const rz = item.rz || item.r || 80;
+      levels.forEach((level, ring) => {
+        const pts = [];
+        const steps = item.contourSteps || 112;
+        for (let i = 0; i < steps; i++) {
+          const a = i / steps * Math.PI * 2;
+          const ux = Math.cos(a) * rx * level;
+          const uz = Math.sin(a) * rz * level;
+          const x = item.x + ux * ca - uz * sa;
+          const z = item.z + ux * sa + uz * ca;
+          pts.push(x, terrainH(x, z) + 1.55 + ring * 0.08, z);
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pts), 3));
+        const line = new THREE.LineLoop(geo, mat);
+        line.renderOrder = 2;
+        scene.add(line);
+      });
+    });
+  }
+
+  (cfg.terrain.roads || []).forEach(item => addPathRibbon(item, cfg.terrain.colors.road || 0xbda878, item.opacity ?? 0.48, 1.1, 0.52));
+  (cfg.terrain.rivers || []).forEach(item => addPathRibbon(item, cfg.terrain.colors.water || 0x526f8f, item.opacity ?? 0.38, 1.25, 0.36));
+  (cfg.terrain.barriers || []).forEach(item => addPathRibbon(item, item.color || 0x6b4a24, item.opacity ?? 0.78, 1.8, 1));
+  addContours();
 
   function makeTextSprite(text, opt = {}) {
     const fs = opt.fs || 44;
@@ -473,10 +586,16 @@
   setActiveChip(verifyMode ? "free" : "auto");
 
   cfg.captions.forEach(caption => {
+    const left = ((caption.t - cfg.time.min) / (cfg.time.max - cfg.time.min) * 100);
     const tick = document.createElement("div");
     tick.className = "tick";
-    tick.style.left = ((caption.t - cfg.time.min) / (cfg.time.max - cfg.time.min) * 100) + "%";
+    tick.style.left = left + "%";
     wrap.appendChild(tick);
+    const label = document.createElement("div");
+    label.className = "event-label";
+    label.style.left = left + "%";
+    label.textContent = caption.title;
+    wrap.appendChild(label);
   });
 
   const hourLabels = $("hourLabels");

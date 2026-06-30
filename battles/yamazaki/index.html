@@ -43,11 +43,22 @@
       camera: { center: [0, 16, 0], focus: [0, 0], az: -2.34, polar: 1.0, radius: 430, verifyCenter: [0, 20, 0], verifyAz: -2.2, verifyPolar: 0.82, verifyRadius: 540, autoPolar: 0.96, autoRadius: 250 },
       terrain: {
         size: 780, segments: 156, base: 2, roughX: 0.037, roughZ: 0.04, roughAmp: 2.1, longAmp: 2.2,
-        colors: { low: 0x77875d, mid: 0x516b45, high: 0x3c5338, road: 0xc7b784, water: 0x4e7498 },
+        colors: { low: 0x77875d, field: 0x8b9466, mid: 0x516b45, high: 0x3c5338, peak: 0x5f5c4c, road: 0xc7b784, water: 0x4e7498 },
         bumps: [
           { x: -70, z: -112, r: 96, amp: 58 }, { x: -150, z: -146, r: 130, amp: 46 },
           { x: 110, z: 140, r: 110, amp: 22 }, { x: 210, z: -40, r: 130, amp: 18 },
           { x: -220, z: 88, r: 150, amp: 20 }
+        ],
+        ridges: [
+          { id: "tennozan", x: -78, z: -112, rx: 104, rz: 72, rot: -0.44, amp: 36 },
+          { id: "north_range", x: -156, z: -150, rx: 142, rz: 74, rot: -0.3, amp: 26 },
+          { id: "west_hills", x: -220, z: 86, rx: 150, rz: 82, rot: 0.16, amp: 23 },
+          { id: "shoryuji", x: 202, z: -2, rx: 132, rz: 72, rot: 0.1, amp: 20, contours: false },
+          { id: "yodo_bank", x: 84, z: 148, rx: 152, rz: 54, rot: 0.08, amp: 22, contours: false }
+        ],
+        basins: [
+          { x: -4, z: 16, rx: 236, rz: 92, rot: -0.06, amp: 10 },
+          { x: 20, z: 144, rx: 288, rz: 48, rot: 0.12, amp: 8 }
         ],
         roads: [
           { width: 8, points: [[-280, 42], [-160, 28], [-42, 10], [72, 4], [250, 0]] },

@@ -99,8 +99,10 @@
         longAmp: 2.6,
         colors: {
           low: 0x6f7f4d,
+          field: 0x879463,
           mid: 0x496a3d,
           high: 0x31492f,
+          peak: 0x4d4f3d,
           road: 0xc6b383,
           water: 0x4e6f80
         },
@@ -110,6 +112,17 @@
           { x: 35, z: 110, r: 120, amp: 28 },
           { x: 145, z: -95, r: 150, amp: 32 },
           { x: 210, z: 95, r: 130, amp: 40 }
+        ],
+        ridges: [
+          { id: "zenshoji", x: -168, z: -126, rx: 132, rz: 70, rot: 0.32, amp: 38 },
+          { id: "okehazama", x: -62, z: -66, rx: 94, rz: 58, rot: -0.42, amp: 42 },
+          { id: "dengaku", x: 42, z: 26, rx: 112, rz: 58, rot: 0.08, amp: 24, contours: false },
+          { id: "kutsukake", x: 164, z: 24, rx: 154, rz: 86, rot: -0.14, amp: 30 },
+          { id: "odaka", x: 194, z: -112, rx: 128, rz: 78, rot: 0.22, amp: 34 }
+        ],
+        basins: [
+          { x: 28, z: 10, rx: 156, rz: 64, rot: 0.08, amp: 12 },
+          { x: -70, z: -28, rx: 190, rz: 54, rot: 0.28, amp: 8 }
         ],
         roads: [
           { width: 9, points: [[-280, -36], [-150, -20], [-34, 5], [68, 24], [230, 36]] },
@@ -129,7 +142,8 @@
         { name: "桶狭間山", x: -70, z: -70 },
         { name: "田楽狭間", x: 42, z: 18 },
         { name: "沓掛城", x: 165, z: 24 },
-        { name: "大高城", x: 190, z: -105, scale: 8, opacity: 0.75 }
+        { name: "大高城", x: 190, z: -105, scale: 8, opacity: 0.75 },
+        { name: "境川筋", x: -8, z: 92, scale: 8, color: "#d5ecff", opacity: 0.76 }
       ],
       units: [
         {

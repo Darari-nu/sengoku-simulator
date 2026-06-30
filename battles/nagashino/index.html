@@ -43,18 +43,31 @@
       camera: { center: [0, 14, 0], focus: [0, 10], az: -2.22, polar: 1.02, radius: 450, verifyCenter: [0, 18, 0], verifyAz: -2.18, verifyPolar: 0.82, verifyRadius: 560, autoPolar: 0.96, autoRadius: 266 },
       terrain: {
         size: 820, segments: 164, base: 2, roughX: 0.035, roughZ: 0.04, roughAmp: 2.2, longAmp: 2.1,
-        colors: { low: 0x738955, mid: 0x536f40, high: 0x3b5535, road: 0xc6b784, water: 0x527ca0 },
+        colors: { low: 0x738955, field: 0x8a9662, mid: 0x536f40, high: 0x3b5535, peak: 0x5a5c49, road: 0xc6b784, water: 0x527ca0 },
         bumps: [
           { x: -210, z: -92, r: 150, amp: 22 }, { x: -230, z: 145, r: 150, amp: 26 },
           { x: 188, z: -110, r: 135, amp: 38 }, { x: 220, z: 96, r: 170, amp: 32 },
           { x: -10, z: 190, r: 120, amp: 18 }
+        ],
+        ridges: [
+          { id: "shitara_west", x: -202, z: -92, rx: 162, rz: 82, rot: 0.1, amp: 24 },
+          { id: "nagashino_castle", x: -214, z: 132, rx: 122, rz: 78, rot: 0.18, amp: 26 },
+          { id: "tobigasu", x: 154, z: -112, rx: 128, rz: 70, rot: -0.12, amp: 44 },
+          { id: "takeda_hills", x: 212, z: 74, rx: 176, rz: 88, rot: 0.12, amp: 36 }
+        ],
+        basins: [
+          { x: -18, z: 10, rx: 210, rz: 88, rot: 0.02, amp: 9 },
+          { x: -10, z: 126, rx: 60, rz: 260, rot: -0.12, amp: 7 }
         ],
         roads: [
           { width: 7, points: [[-280, 34], [-160, 20], [-40, 12], [92, 8], [252, -12]] },
           { width: 6, points: [[-210, -126], [-126, -70], [-30, -24], [92, -10]] },
           { width: 5, points: [[-208, 120], [-80, 88], [30, 48], [160, 26]] }
         ],
-        rivers: [{ width: 13, points: [[-60, -210], [-38, -100], [-20, 8], [0, 132], [22, 250]] }]
+        rivers: [{ width: 13, points: [[-60, -210], [-38, -100], [-20, 8], [0, 132], [22, 250]] }],
+        barriers: [
+          { width: 3.2, color: 0x6a4520, opacity: 0.82, points: [[-112, -54], [-108, -18], [-100, 20], [-90, 60], [-82, 102]] }
+        ]
       },
       sides: {
         allied: { label: "織田徳川軍", color: 0xd9a441, labelColor: "#ffd98a", flagBg: "#171717", flagStripe: "#d9a441", flagText: "#e8d9b0" },

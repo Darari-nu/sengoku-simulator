@@ -420,6 +420,22 @@ canvas {
   transform: translate(-1px, -50%);
 }
 
+.event-label {
+  position: absolute;
+  top: -20px;
+  z-index: 3;
+  border: 1px solid rgba(217, 164, 65, 0.55);
+  background: rgba(22, 16, 8, 0.78);
+  color: #e8d9b0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 5px;
+  pointer-events: none;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
 #hourLabels {
   position: absolute;
   left: 0;
@@ -454,5 +470,9 @@ canvas {
   #homeLink {
     top: 106px;
     right: 10px;
+  }
+
+  .event-label {
+    display: none;
   }
 }
