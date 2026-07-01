@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>月山富田城包囲 ― 3D俯瞰絵巻</title>
+  <meta name="description" content="月山富田城の戦いを3D俯瞰絵巻で体験。山城包囲、補給路遮断、尼子方の消耗と降伏を時刻スライダーで追える合戦シミュレーター。">
+  <meta property="og:title" content="月山富田城包囲 ― 3D俯瞰絵巻">
+  <meta property="og:description" content="山城包囲、兵糧遮断、降伏までの流れを3D俯瞰で読む。">
+  <meta property="og:image" content="../../assets/home/card-gassan-toda.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles/battle-sim.css">
+</head>
+<body>
+  <div id="stage"></div>
+  <a id="homeLink" href="../../">合戦一覧</a>
+  <div id="titleBox">
+    <div class="logo"><div class="eyebrow" id="battleEyebrow"></div><h1 id="battleTitle"></h1></div>
+    <div id="clockBox"><div class="date" id="clockDate"></div><div class="time" id="clockTime"></div><div class="wakoku" id="clockWakoku"></div></div>
+  </div>
+  <div id="compass"><div id="compassNeedle">北</div></div>
+  <div id="infoCard"><div class="nm" id="infoName"></div><div class="meta" id="infoMeta"></div><div class="note" id="infoNote"></div></div>
+  <div id="hint">ドラッグで回転 ／ ホイール・ピンチで拡大</div>
+  <div id="caption"><div class="cap-title" id="capTitle"></div><div class="cap-body" id="capBody"></div></div>
+  <div id="viewStrip"></div>
+  <div id="timeline">
+    <button id="playBtn" aria-label="再生/停止">▮▮</button>
+    <button id="speedBtn">x1</button>
+    <div id="trackWrap"><div id="fillBar"></div><input id="track" type="range"><div id="hourLabels"></div></div>
+  </div>
+  <script src="../../data/extra-battle-scenes.js"></script>
+  <script>window.BATTLE_SCENE = window.EXTRA_BATTLE_SCENES["gassan-toda"];</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="../../scripts/battle-sim.js"></script>
+</body>
+</html>

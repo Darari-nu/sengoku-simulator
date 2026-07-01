@@ -22,7 +22,19 @@
     kawanakajima: "../../assets/intro/kawanakajima-intro.jpg",
     nagashino: "../../assets/intro/nagashino-intro.jpg",
     yamazaki: "../../assets/intro/yamazaki-intro.jpg",
-    mikatagahara: "../../assets/intro/mikatagahara-intro.jpg"
+    mikatagahara: "../../assets/intro/mikatagahara-intro.jpg",
+    "komaki-nagakute": "../../assets/intro/komaki-nagakute-intro.jpg",
+    itsukushima: "../../assets/intro/itsukushima-intro.jpg",
+    anegawa: "../../assets/intro/anegawa-intro.jpg",
+    "kawagoe-night": "../../assets/intro/kawagoe-night-intro.jpg",
+    shizugatake: "../../assets/intro/shizugatake-intro.jpg",
+    honnoji: "../../assets/intro/honnoji-intro.jpg",
+    "tennoji-okayama": "../../assets/intro/tennoji-okayama-intro.jpg",
+    mimikawa: "../../assets/intro/mimikawa-intro.jpg",
+    hitotoribashi: "../../assets/intro/hitotoribashi-intro.jpg",
+    "gassan-toda": "../../assets/intro/gassan-toda-intro.jpg",
+    "osaka-summer": "../../assets/intro/osaka-summer-intro.jpg",
+    "osaka-winter": "../../assets/intro/osaka-winter-intro.jpg"
   };
   const stateStyles = {
     "待機": { color: "#d8ccb0", bg: "rgba(18,18,16,.72)", border: "rgba(244,234,215,.34)" },

@@ -239,11 +239,29 @@ a {
 
 .battle-rail {
   display: grid;
-  align-content: center;
+  align-content: start;
   gap: 8px;
   align-self: stretch;
+  max-height: min(720px, calc(100svh - 180px));
+  overflow-y: auto;
+  padding-right: 4px;
   padding-top: 8px;
   padding-bottom: 8px;
+  scrollbar-color: rgba(216, 169, 75, 0.46) rgba(244, 234, 215, 0.07);
+  scrollbar-width: thin;
+}
+
+.battle-rail::-webkit-scrollbar {
+  width: 6px;
+}
+
+.battle-rail::-webkit-scrollbar-track {
+  background: rgba(244, 234, 215, 0.07);
+}
+
+.battle-rail::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(216, 169, 75, 0.46);
 }
 
 .rail-item {
@@ -251,7 +269,7 @@ a {
   grid-template-columns: 46px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  min-height: 64px;
+  min-height: 58px;
   border: 1px solid rgba(244, 234, 215, 0.12);
   border-radius: 6px;
   background: rgba(9, 10, 10, 0.64);
@@ -293,7 +311,7 @@ a {
 .rail-item strong {
   color: var(--paper);
   font-family: var(--display);
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: 0.04em;
 }
 
