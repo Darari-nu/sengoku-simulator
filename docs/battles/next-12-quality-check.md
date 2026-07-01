@@ -21,6 +21,9 @@
 | 小牧・長久手 | `verify=1&t=12.4&weather=0` で突撃局面、部隊ラベル、状態ラベル、転機ラベル表示 | OK |
 | 厳島 | `verify=1&t=5.8&weather=0` で開戦局面、島嶼地形、部隊ラベル、転機ラベル表示 | OK |
 | 大坂冬の陣 | `verify=1&t=12.6&weather=0` で真田丸攻防、砲列、状態ラベル、転機ラベル表示 | OK |
+| 姉川 | `verify=1&t=8.6&weather=0` で織田・徳川が南岸、浅井・朝倉が北岸に見える | OK |
+| 姉川 | `verify=1&t=10.1&weather=0` で姉川を越えた北岸寄りの衝突になっている | OK |
+| 全18ページ | 代表時刻でページを順次開き、canvas表示、エラー表示なし、console error 0件 | OK |
 
 ## スクショ保存先
 
@@ -31,3 +34,10 @@
 - `/private/tmp/sengoku-add12-itsukushima.png`
 - `/private/tmp/sengoku-add12-osaka-winter.png`
 - `/private/tmp/sengoku-add12-mobile-home.png`
+- `/private/tmp/sengoku-anegawa-fixed-086.png`
+- `/private/tmp/sengoku-anegawa-fixed-101.png`
+
+## 地形監査
+
+- 既存18合戦の相対地形監査は `docs/battles/terrain-audit-260701.md` に記録した。
+- 姉川は修正前に、川を挟む説明と実座標が食い違っていたため修正済み。
