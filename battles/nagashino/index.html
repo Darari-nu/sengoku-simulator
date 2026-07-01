@@ -45,13 +45,13 @@
         size: 820, segments: 164, base: 2, roughX: 0.035, roughZ: 0.04, roughAmp: 2.2, longAmp: 2.1,
         colors: { low: 0x738955, field: 0x8a9662, mid: 0x536f40, high: 0x3b5535, peak: 0x5a5c49, road: 0xc6b784, water: 0x527ca0 },
         bumps: [
-          { x: -210, z: -92, r: 150, amp: 22 }, { x: -230, z: 145, r: 150, amp: 26 },
+          { x: -210, z: -92, r: 150, amp: 22 }, { x: 230, z: 145, r: 150, amp: 26 },
           { x: 188, z: -110, r: 135, amp: 38 }, { x: 220, z: 96, r: 170, amp: 32 },
           { x: -10, z: 190, r: 120, amp: 18 }
         ],
         ridges: [
           { id: "shitara_west", x: -202, z: -92, rx: 162, rz: 82, rot: 0.1, amp: 24 },
-          { id: "nagashino_castle", x: -214, z: 132, rx: 122, rz: 78, rot: 0.18, amp: 26 },
+          { id: "nagashino_castle", x: 228, z: 132, rx: 122, rz: 78, rot: 0.18, amp: 26 },
           { id: "tobigasu", x: 154, z: -112, rx: 128, rz: 70, rot: -0.12, amp: 44 },
           { id: "takeda_hills", x: 212, z: 74, rx: 176, rz: 88, rot: 0.12, amp: 36 }
         ],
@@ -62,11 +62,13 @@
         roads: [
           { width: 7, points: [[-280, 34], [-160, 20], [-40, 12], [92, 8], [252, -12]] },
           { width: 6, points: [[-210, -126], [-126, -70], [-30, -24], [92, -10]] },
-          { width: 5, points: [[-208, 120], [-80, 88], [30, 48], [160, 26]] }
+          { width: 5, points: [[-208, 120], [-80, 88], [30, 48], [160, 26], [238, 120]] }
         ],
         rivers: [{ width: 13, points: [[-60, -210], [-38, -100], [-20, 8], [0, 132], [22, 250]] }],
         barriers: [
-          { width: 3.2, color: 0x6a4520, opacity: 0.82, points: [[-112, -54], [-108, -18], [-100, 20], [-90, 60], [-82, 102]] }
+          { width: 3.2, color: 0x6a4520, opacity: 0.82, points: [[-72, -66], [-66, -28], [-58, 10], [-48, 52], [-40, 112]] },
+          { width: 2.4, color: 0x7a5128, opacity: 0.7, points: [[-92, -48], [-86, -12], [-78, 28], [-68, 78]] },
+          { width: 2.4, color: 0x7a5128, opacity: 0.7, points: [[-52, -58], [-46, -18], [-38, 24], [-28, 90]] }
         ]
       },
       sides: {
@@ -75,31 +77,31 @@
         neutral: { label: "地形", color: 0xb9c4cf, labelColor: "#e8eef2", flagBg: "#65717a", flagStripe: "#b9c4cf", flagText: "#111" }
       },
       places: [
-        { name: "馬防柵", x: -72, z: 18, scale: 9, color: "#f1d88c" },
+        { name: "馬防柵", x: -50, z: 18, scale: 9, color: "#f1d88c" },
         { name: "連吾川", x: -12, z: 120, scale: 9, opacity: 0.8 },
         { name: "設楽原", x: 18, z: 0 },
         { name: "鳶ヶ巣山", x: 152, z: -112, scale: 8 },
-        { name: "長篠城", x: -210, z: 134, scale: 8, opacity: 0.75 }
+        { name: "長篠城", x: 226, z: 134, scale: 8, opacity: 0.75 }
       ],
       units: [
-        { id: "nobunaga", name: "織田信長", side: "allied", men: "約30,000", note: "馬防柵の後方に布陣し、武田軍の突撃を受け止める。", path: [[6, -142, 22], [14, -142, 22]], size: 66, initialFacing: [1, 0] },
-        { id: "ieyasu", name: "徳川家康", side: "allied", men: "約8,000", note: "南寄りの柵後方で守る。武田軍の圧力を受け止める。", path: [[6, -126, 78], [14, -126, 78]], size: 42, initialFacing: [1, -0.1] },
-        { id: "arquebus", name: "鉄砲隊", side: "allied", men: "約3,000", note: "柵線に沿って射撃。突撃する武田隊を柵前で止める。", path: [[6, -92, 0], [14, -92, 0]], size: 50, initialFacing: [1, 0] },
-        { id: "katsuyori", name: "武田勝頼", side: "takeda", men: "約15,000", note: "東側から前進するが、柵と鉄砲の防御に阻まれて後退する。", path: [[6, 196, -6], [9.8, 138, -2], [11.3, 72, 4], [12.8, 128, -18], [14, 190, -46]], fade: [13.2, 14], size: 62, initialFacing: [-1, 0] },
-        { id: "takeda_cavalry", name: "武田騎馬隊", side: "takeda", men: "約8,000", note: "柵へ向けて突撃。連吾川と柵前で勢いを失う。", path: [[6, 218, 72], [9.6, 144, 50], [10.8, 48, 28], [11.8, 18, 18], [13, 104, 54], [14, 174, 82]], fade: [12.9, 14], size: 58, initialFacing: [-1, -0.1] },
+        { id: "nobunaga", name: "織田信長", side: "allied", men: "約30,000", note: "設楽原西側の馬防柵後方に布陣し、武田軍の突撃を受け止める。", path: [[6, -148, 16], [14, -148, 16]], size: 66, initialFacing: [1, 0] },
+        { id: "ieyasu", name: "徳川家康", side: "allied", men: "約8,000", note: "柵の南寄り後方で守り、連吾川を越える武田軍を受ける。", path: [[6, -132, 82], [14, -132, 82]], size: 42, initialFacing: [1, -0.1] },
+        { id: "arquebus", name: "鉄砲隊", side: "allied", men: "約3,000", note: "連吾川西岸寄りの柵線に沿って射撃し、突撃を柵前で止める。", path: [[6, -76, 8], [14, -76, 8]], size: 50, initialFacing: [1, 0] },
+        { id: "katsuyori", name: "武田勝頼", side: "takeda", men: "約15,000", note: "長篠城方面から設楽原東側へ進み、連吾川を越えた攻撃を命じるが後退する。", path: [[6, 206, -6], [9.8, 142, -2], [11.3, 34, 4], [12.8, 128, -18], [14, 198, -46]], fade: [13.2, 14], size: 62, initialFacing: [-1, 0] },
+        { id: "takeda_cavalry", name: "武田騎馬隊", side: "takeda", men: "約8,000", note: "東側から連吾川を越えて突撃し、馬防柵の手前で勢いを失う。", path: [[6, 218, 72], [9.6, 144, 50], [10.8, 38, 28], [11.8, -34, 20], [13, 104, 54], [14, 174, 82]], fade: [12.9, 14], size: 58, initialFacing: [-1, -0.1] },
         { id: "sakai", name: "酒井忠次", side: "allied", men: "約3,000", note: "別働隊として鳶ヶ巣山方面へ迂回し、武田方の背後を突く。", path: [[6, -216, -120], [8, -120, -88], [9.2, -20, -88], [10.6, 98, -108], [14, 140, -120]], size: 30, initialFacing: [1, -0.1] }
       ],
       arrows: [
         { t0: 7.8, t1: 10.8, from: [-210, -120], to: [120, -112], color: 0xffd35c, head: 19, width: 11 },
-        { t0: 9.5, t1: 11.8, from: [210, 58], to: [8, 18], color: 0x9fc5f0, head: 22, width: 14 },
-        { t0: 10.8, t1: 12.3, from: [-92, 6], to: [34, 20], color: 0xffd35c, head: 15, width: 9 },
+        { t0: 9.5, t1: 11.8, from: [210, 58], to: [-34, 20], color: 0x9fc5f0, head: 22, width: 14 },
+        { t0: 10.8, t1: 12.3, from: [-76, 8], to: [-28, 20], color: 0xffd35c, head: 15, width: 9 },
         { t0: 12.4, t1: 14, from: [82, 28], to: [188, -40], color: 0x9fc5f0, head: 17, width: 10 }
       ],
       captions: [
-        { t: 6, title: "布陣", body: "織田徳川軍、馬防柵の後方に布陣。武田軍は東側に構える", focus: [10, 24], duration: 0.88 },
+        { t: 6, title: "布陣", body: "織田徳川軍は連吾川西岸の馬防柵後方、武田軍は長篠城側の東へ構える", focus: [10, 24], duration: 0.88 },
         { t: 8, title: "迂回", body: "酒井忠次隊、鳶ヶ巣山方面へ回り込む", focus: [-18, -94], duration: 0.86 },
         { t: 10, title: "突撃", body: "武田騎馬隊、連吾川を越えて柵へ迫る", focus: [74, 30], duration: 0.86 },
-        { t: 11.3, title: "射撃", body: "鉄砲隊、柵線から射撃。突撃は柵前で止まる", focus: [-22, 18], duration: 0.9 },
+        { t: 11.3, title: "射撃", body: "鉄砲隊、連吾川西岸寄りの柵線から射撃。突撃は柵前で止まる", focus: [-34, 18], duration: 0.9 },
         { t: 13, title: "崩れ", body: "武田軍、重臣を失い後退へ。勝頼本隊も東へ下がる", focus: [100, 20], duration: 0.86 },
         { t: 14, title: "決着", body: "織田徳川軍、設楽原の防御線を保持する", focus: [-78, 22], duration: 0.8 }
       ],

@@ -24,6 +24,8 @@
 | 姉川 | `verify=1&t=8.6&weather=0` で織田・徳川が南岸、浅井・朝倉が北岸に見える | OK |
 | 姉川 | `verify=1&t=10.1&weather=0` で姉川を越えた北岸寄りの衝突になっている | OK |
 | 全18ページ | 代表時刻でページを順次開き、canvas表示、エラー表示なし、console error 0件 | OK |
+| 長篠 | `verify=1&t=6&weather=0` で長篠城を設楽原東側、馬防柵を連吾川西岸寄りに表示 | OK |
+| 長篠 | `verify=1&t=11.3&weather=0` で武田騎馬隊が連吾川を越え、馬防柵前で止まる構図 | OK |
 
 ## スクショ保存先
 
@@ -36,6 +38,8 @@
 - `/private/tmp/sengoku-add12-mobile-home.png`
 - `/private/tmp/sengoku-anegawa-fixed-086.png`
 - `/private/tmp/sengoku-anegawa-fixed-101.png`
+- `/private/tmp/sengoku-nagashino-fixed-060.png`
+- `/private/tmp/sengoku-nagashino-fixed-113.png`
 
 ## 地形監査
 
