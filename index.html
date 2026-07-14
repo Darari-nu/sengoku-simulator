@@ -10,6 +10,8 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="./assets/ogp/sengoku-ogp.svg">
   <meta name="twitter:card" content="summary_large_image">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#0a0d11">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="./assets/home/hero-command-table.jpg" as="image">
@@ -88,6 +90,7 @@
   <script src="./data/battles-index.js"></script>
   <script>
     (function() {
+      document.documentElement.classList.add("js");
       const battles = window.BATTLES || [];
       const featured = battles.find(battle => battle.status === "published") || battles[0];
       const featuredStage = document.getElementById("featured-stage");
@@ -191,7 +194,37 @@
           </div>
         </article>
       `).join("");
+
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+        const revealItems = document.querySelectorAll(".battle-card, .featured-stage, .section-head");
+        const observer = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("in-view");
+            entry.target.classList.remove("reveal-armed");
+            observer.unobserve(entry.target);
+          });
+        }, { threshold: 0.15 });
+        const revealOrObserve = item => {
+          const rect = item.getBoundingClientRect();
+          if (rect.top < window.innerHeight * 0.95 && rect.bottom > 0) {
+            item.classList.add("in-view");
+            return;
+          }
+          item.classList.add("reveal-armed");
+          observer.observe(item);
+        };
+        requestAnimationFrame(() => revealItems.forEach(revealOrObserve));
+        window.setTimeout(() => {
+          revealItems.forEach(item => {
+            if (!item.classList.contains("in-view")) item.classList.add("in-view");
+          });
+        }, 1000);
+      } else {
+        document.querySelectorAll(".battle-card, .featured-stage, .section-head").forEach(item => item.classList.add("in-view"));
+      }
     })();
   </script>
+  <script src="./scripts/register-sw.js"></script>
 </body>
 </html>

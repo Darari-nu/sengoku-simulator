@@ -235,6 +235,7 @@ a {
   object-fit: cover;
   object-position: center;
   filter: saturate(0.98) contrast(1.08) brightness(0.82);
+  animation: hero-ken-burns 24s cubic-bezier(.22, 1, .36, 1) forwards;
 }
 
 .battle-rail {
@@ -265,6 +266,7 @@ a {
 }
 
 .rail-item {
+  position: relative;
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr);
   align-items: center;
@@ -281,10 +283,27 @@ a {
   transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
 }
 
+.rail-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  background: var(--gold-strong);
+  opacity: 0.86;
+  transform: translateY(-50%);
+  transition: height 260ms ease;
+}
+
 .rail-item:hover {
   border-color: rgba(242, 204, 116, 0.72);
   background: rgba(24, 25, 21, 0.82);
   transform: translateX(2px);
+}
+
+.rail-item:hover::before {
+  height: 100%;
 }
 
 .rail-index {
@@ -540,6 +559,7 @@ h1 {
 }
 
 .battle-card {
+  position: relative;
   display: flex;
   min-width: 0;
   overflow: hidden;
@@ -552,6 +572,21 @@ h1 {
   box-shadow:
     0 18px 48px rgba(0, 0, 0, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.battle-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(45deg, transparent 20%, rgba(242, 204, 116, 0.22) 48%, transparent 70%);
+  opacity: 0;
+  transform: translateX(-120%);
+}
+
+.battle-card:hover::after {
+  opacity: 1;
+  animation: card-sheen 700ms ease;
 }
 
 .battle-card .battle-visual {
@@ -575,6 +610,12 @@ h1 {
   object-fit: cover;
   object-position: center;
   transform: scale(1.01);
+  transition: transform 500ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.battle-card:hover .battle-visual img,
+.featured-stage:hover .battle-visual img {
+  transform: scale(1.05);
 }
 
 .battle-visual::after {
@@ -797,6 +838,78 @@ dd {
 
 .noscript {
   color: var(--paper-dim);
+}
+
+.reveal-armed {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 600ms cubic-bezier(.22, 1, .36, 1),
+    transform 600ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.reveal-armed.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.js .battle-card:nth-child(2n) {
+  transition-delay: 60ms;
+}
+
+.js .battle-card:nth-child(3n) {
+  transition-delay: 120ms;
+}
+
+.js .battle-card:nth-child(4n) {
+  transition-delay: 180ms;
+}
+
+@keyframes hero-ken-burns {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: scale(1.06) translate3d(1.5%, -1.2%, 0);
+  }
+}
+
+@keyframes card-sheen {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .hero-bg,
+  .battle-card::after {
+    animation: none;
+  }
+
+  .battle-visual img,
+  .rail-item,
+  .rail-item::before,
+  .js .battle-card,
+  .js .featured-stage,
+  .js .section-head {
+    transition: none;
+  }
+
+  .js .battle-card,
+  .js .featured-stage,
+  .js .section-head {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (min-width: 1440px) {

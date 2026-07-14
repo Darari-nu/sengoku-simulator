@@ -9,6 +9,8 @@
   <meta property="og:description" content="今川の大軍と織田の奇襲を3D俯瞰で体験する桶狭間シミュレーター。">
   <meta property="og:image" content="../../assets/ogp/sengoku-ogp.svg">
   <meta name="twitter:card" content="summary_large_image">
+  <link rel="manifest" href="../../manifest.webmanifest">
+  <meta name="theme-color" content="#0a0d11">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
@@ -204,13 +206,16 @@
         { t0: 13.2, t1: 14.35, from: [-190, -112], to: [46, 18], color: 0xffd35c, head: 22, width: 14 },
         { t0: 14.2, t1: 15.0, from: [58, 26], to: [126, 118], color: 0x9fc5f0, head: 16, width: 10 }
       ],
+      effects: [
+        { type: "clash", t0: 13.55, t1: 14.45, at: [42, 18], radius: 46, rate: 11 }
+      ],
       captions: [
         { t: 11.0, title: "進軍", body: "今川の大軍、尾張へ進む。隊列は街道に長く伸びる", focus: [95, 18], duration: 0.72 },
         { t: 12.0, title: "休息", body: "義元本陣、田楽狭間で一息。織田勢は砦で機を待つ", focus: [30, 16], duration: 0.72 },
-        { t: 13.15, title: "豪雨", body: "空が崩れる。雨音と視界の悪化が、奇襲の覆いとなる", focus: [-78, -58], duration: 0.82 },
-        { t: 13.65, title: "急襲", body: "信長隊、谷筋を抜けて今川本陣へ殺到", focus: [-18, -8], duration: 0.78 },
-        { t: 14.22, title: "本陣崩壊", body: "義元本陣、混乱。大軍の優位は一瞬で失われる", focus: [52, 18], duration: 0.84 },
-        { t: 14.65, title: "決着", body: "今川義元討死。尾張の小勢が東海の大軍を破る", focus: [70, 38], duration: 0.78 }
+        { t: 13.15, title: "豪雨", body: "空が崩れる。雨音と視界の悪化が、奇襲の覆いとなる", focus: [-78, -58], duration: 0.82, shot: { type: "crane", radius: 285, polar: 0.78, duration: 0.48, shake: 0.12 } },
+        { t: 13.65, title: "急襲", body: "信長隊、谷筋を抜けて今川本陣へ殺到", focus: [-18, -8], duration: 0.78, shot: { type: "push", radius: 180, polar: 0.84, duration: 0.4, shake: 0.38 } },
+        { t: 14.22, title: "本陣崩壊", body: "義元本陣、混乱。大軍の優位は一瞬で失われる", focus: [52, 18], duration: 0.84, shot: { type: "push", radius: 205, polar: 0.86, duration: 0.44, shake: 0.34 } },
+        { t: 14.65, title: "決着", body: "今川義元討死。尾張の小勢が東海の大軍を破る", focus: [70, 38], duration: 0.78, shot: { type: "pull", radius: 305, polar: 0.92, duration: 0.5, shake: 0.16 } }
       ],
       weather: {
         fogCount: 10,
@@ -226,5 +231,6 @@
     };
   </script>
   <script src="../../scripts/battle-sim.js"></script>
+  <script src="../../scripts/register-sw.js"></script>
 </body>
 </html>

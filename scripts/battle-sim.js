@@ -11,6 +11,70 @@
   const $ = id => document.getElementById(id);
   const query = new URLSearchParams(window.location.search);
   const verifyMode = query.get("verify") === "1";
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fxParam = query.get("fx");
+  const forcedFxTier = verifyMode
+    ? "high"
+    : (fxParam === "0" || fxParam === "off" ? "off" : (/^(high|medium|low)$/.test(fxParam || "") ? fxParam : null));
+  const FX = {
+    tier: forcedFxTier || "auto",
+    shadows: true,
+    particles: 1.0,
+    clouds: true,
+    shake: !reducedMotion
+  };
+  let renderer = null;
+  let sun = null;
+  let terrainMesh = null;
+  let skyDome = null;
+  let sunSprite = null;
+  const shadowCasters = [];
+  const cloudSprites = [];
+  const fxPools = [];
+  function applyTier(tier) {
+    FX.tier = tier;
+    FX.shadows = tier !== "off" && tier !== "low";
+    FX.particles = tier === "off" ? 0 : tier === "low" ? 0.4 : tier === "medium" ? 0.7 : 1.0;
+    FX.clouds = tier !== "off" && tier !== "low";
+    FX.shake = tier !== "off" && !reducedMotion;
+    document.documentElement.dataset.fx = tier;
+    syncFxRuntime();
+  }
+  function syncFxRuntime() {
+    if (renderer) {
+      renderer.outputEncoding = FX.tier === "off" ? THREE.LinearEncoding : THREE.sRGBEncoding;
+      renderer.toneMapping = FX.tier === "off" ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = FX.tier === "off" ? 1 : (cfg.sky.exposure ?? 1.05);
+      renderer.shadowMap.enabled = FX.shadows;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.needsUpdate = true;
+    }
+    if (sun) {
+      const shadowSize = FX.tier === "medium" ? 1024 : 2048;
+      sun.castShadow = FX.shadows;
+      sun.shadow.mapSize.set(shadowSize, shadowSize);
+      sun.shadow.bias = -0.0005;
+      const range = (cfg.terrain.size || 760) * 0.3;
+      const cam = sun.shadow.camera;
+      cam.left = -range;
+      cam.right = range;
+      cam.top = range;
+      cam.bottom = -range;
+      cam.near = 40;
+      cam.far = 1200;
+      cam.updateProjectionMatrix();
+    }
+    if (terrainMesh) terrainMesh.receiveShadow = FX.shadows;
+    shadowCasters.forEach(mesh => {
+      mesh.castShadow = FX.shadows;
+    });
+    if (skyDome) skyDome.visible = FX.tier !== "off";
+    if (sunSprite) sunSprite.visible = FX.tier !== "off";
+    cloudSprites.forEach(sprite => {
+      sprite.visible = FX.clouds;
+    });
+  }
+  applyTier(FX.tier);
   const requestedTime = Number.parseFloat(query.get("t") || "");
   const initialTime = Number.isFinite(requestedTime) ? clamp(requestedTime, cfg.time.min, cfg.time.max) : cfg.time.min;
   const weatherScale = query.get("weather") === "0" ? 0 : 1;
@@ -207,7 +271,7 @@
   }
 
   const stage = $("stage");
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   stage.appendChild(renderer.domElement);
@@ -218,9 +282,10 @@
 
   const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 1, 3200);
   const hemi = new THREE.HemisphereLight(0xdfe8f0, 0x48503e, 0.85);
-  const sun = new THREE.DirectionalLight(0xfff2dd, 1.0);
+  sun = new THREE.DirectionalLight(0xfff2dd, 1.0);
   sun.position.set(260, 360, -180);
   scene.add(hemi, sun);
+  syncFxRuntime();
 
   function buildTerrain() {
     const terrain = cfg.terrain;
@@ -268,10 +333,85 @@
     pos.needsUpdate = true;
     geo.computeVertexNormals();
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    scene.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true })));
+    terrainMesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+    terrainMesh.receiveShadow = FX.shadows;
+    scene.add(terrainMesh);
+  }
+
+  function buildSky() {
+    const size = cfg.terrain.size || 760;
+    const radius = size * 1.6;
+    const skyMat = new THREE.ShaderMaterial({
+      uniforms: {
+        topColor: { value: toColor(cfg.sky.morning) },
+        horizonColor: { value: toColor(cfg.sky.fog) }
+      },
+      vertexShader: [
+        "varying vec3 vWorldPosition;",
+        "void main() {",
+        "  vec4 worldPosition = modelMatrix * vec4(position, 1.0);",
+        "  vWorldPosition = worldPosition.xyz;",
+        "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
+        "}"
+      ].join("\n"),
+      fragmentShader: [
+        "uniform vec3 topColor;",
+        "uniform vec3 horizonColor;",
+        "varying vec3 vWorldPosition;",
+        "void main() {",
+        "  float h = normalize(vWorldPosition).y;",
+        "  float k = pow(max(h, 0.0), 0.55);",
+        "  gl_FragColor = vec4(mix(horizonColor, topColor, k), 1.0);",
+        "}"
+      ].join("\n"),
+      side: THREE.BackSide,
+      depthWrite: false
+    });
+    skyDome = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16), skyMat);
+    skyDome.frustumCulled = false;
+    skyDome.renderOrder = -10;
+    scene.add(skyDome);
+
+    const skyTex = makeSoftTexture();
+    const sunMat = new THREE.SpriteMaterial({
+      map: skyTex,
+      color: cfg.sky.nightMode ? 0xdde8ff : 0xfff1bd,
+      transparent: true,
+      opacity: cfg.sky.nightMode ? 0.45 : 0.72,
+      depthWrite: false
+    });
+    sunSprite = new THREE.Sprite(sunMat);
+    sunSprite.scale.setScalar(radius * (cfg.sky.nightMode ? 0.1 : 0.13));
+    sunSprite.renderOrder = -8;
+    scene.add(sunSprite);
+
+    for (let i = 0; i < 6; i++) {
+      const cloudMat = new THREE.SpriteMaterial({
+        map: makeSoftTexture(),
+        color: cfg.sky.nightMode ? 0xb4c0d0 : 0xffffff,
+        transparent: true,
+        opacity: (0.12 + Math.random() * 0.08) * (cfg.sky.nightMode ? 0.55 : 1),
+        depthWrite: false
+      });
+      const cloud = new THREE.Sprite(cloudMat);
+      const angle = Math.random() * Math.PI * 2;
+      const dist = radius * (0.28 + Math.random() * 0.4);
+      cloud.position.set(Math.cos(angle) * dist, size * (0.34 + Math.random() * 0.2), Math.sin(angle) * dist);
+      cloud.scale.set(size * (0.26 + Math.random() * 0.18), size * (0.07 + Math.random() * 0.05), 1);
+      cloud.userData = {
+        vx: (Math.random() - 0.5) * 2.2,
+        vz: (Math.random() - 0.5) * 2.2
+      };
+      cloud.renderOrder = -7;
+      scene.add(cloud);
+      cloudSprites.push(cloud);
+    }
+
+    syncFxRuntime();
   }
 
   buildTerrain();
+  buildSky();
 
   function addPathRibbon(item, color, opacity, yOffset, widthScale) {
     const points = item.points || [];
@@ -417,9 +557,15 @@
 
   function setUnitStateSprite(obj, state) {
     if (obj.state === state) return;
-    if (obj.stateLabel) obj.group.remove(obj.stateLabel);
+    if (obj.stateLabel) {
+      obj.stateLabel.userData.retireAt = performance.now();
+      obj.stateLabel.userData.retiring = true;
+      obj.retiringStateLabels.push(obj.stateLabel);
+    }
     const sprite = makeStateSprite(state);
     sprite.position.y = 43;
+    sprite.userData.bornAt = performance.now();
+    sprite.userData.baseOpacity = 1;
     obj.group.add(sprite);
     obj.stateLabel = sprite;
     obj.state = state;
@@ -455,12 +601,15 @@
     });
   }
 
+  const placeSprites = [];
   (cfg.places || []).forEach(place => {
     const sprite = makeTextSprite(place.name, { fs: place.fs || 38, color: place.color || "#e8dfc8", stroke: 5, weight: 500 });
     sprite.position.set(place.x, terrainH(place.x, place.z) + (place.y || 16), place.z);
     sprite.scale.set(sprite.userData.aspect * (place.scale || 10), place.scale || 10, 1);
     sprite.material.opacity = place.opacity || 0.85;
+    sprite.userData.baseOpacity = place.opacity || 0.85;
     scene.add(sprite);
+    placeSprites.push(sprite);
   });
 
   const soldierGeo = new THREE.BoxGeometry(1.7, 2.6, 1.7);
@@ -493,7 +642,12 @@
   cfg.units.forEach(unit => {
     const side = sideOf(unit);
     const group = new THREE.Group();
-    const mat = new THREE.MeshLambertMaterial({ color: side.color, transparent: true });
+    const mat = new THREE.MeshLambertMaterial({
+      color: 0xffffff,
+      emissive: side.color,
+      emissiveIntensity: 0.06,
+      transparent: true
+    });
     const count = unitDisplayCount(unit);
     const forceScale = unitForceScale(unit);
 
@@ -511,6 +665,8 @@
     group.add(footprint);
 
     const inst = new THREE.InstancedMesh(soldierGeo, mat, count);
+    const baseColor = new THREE.Color(side.color);
+    const color = new THREE.Color();
     const offsets = [];
     const cols = Math.ceil(Math.sqrt(count * 1.8));
     const spacingX = 3.2 * forceScale;
@@ -521,8 +677,13 @@
         Math.floor(i / cols) * spacingZ + (Math.random() - 0.5) * 1.6,
         0.85 + Math.random() * 0.45
       ]);
+      color.copy(baseColor).offsetHSL(0, (Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.12);
+      inst.setColorAt(i, color);
     }
+    if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
     group.add(inst);
+    inst.castShadow = FX.shadows;
+    shadowCasters.push(inst);
 
     const poleMat = new THREE.MeshLambertMaterial({ color: 0x3a2e1c, transparent: true });
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 24, 5), poleMat);
@@ -543,8 +704,11 @@
     unit.name.slice(0, 3).split("").forEach((char, i) => fc.fillText(char, 32, 80 + i * 58));
     const flagTex = new THREE.CanvasTexture(flagCanvas);
     const flagMat = new THREE.MeshBasicMaterial({ map: flagTex, side: THREE.DoubleSide, transparent: true });
-    const flag = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 20), flagMat);
+    const flagGeo = new THREE.PlaneGeometry(5.5, 20, 1, 8);
+    const flagBasePositions = Float32Array.from(flagGeo.attributes.position.array);
+    const flag = new THREE.Mesh(flagGeo, flagMat);
     flag.position.set(3, 15, 0);
+    flag.userData.basePositions = flagBasePositions;
     group.add(flag);
 
     const label = makeTextSprite(unit.name, { fs: 46, color: side.labelColor || "#fff", stroke: 7 });
@@ -560,8 +724,10 @@
       poleMat,
       flagMat,
       footprintMat,
+      flag,
       label,
       stateLabel: null,
+      retiringStateLabels: [],
       offsets,
       forceScale,
       pos: new THREE.Vector3(),
@@ -585,6 +751,148 @@
   }
 
   const softTex = makeSoftTexture();
+
+  function makeParticleTexture(kind) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    const grad = ctx.createRadialGradient(64, 64, 2, 64, 64, 64);
+    if (kind === "spark") {
+      grad.addColorStop(0, "rgba(255,255,255,1)");
+      grad.addColorStop(0.18, "rgba(255,210,108,.95)");
+      grad.addColorStop(1, "rgba(255,110,32,0)");
+    } else if (kind === "fire") {
+      grad.addColorStop(0, "rgba(255,245,180,1)");
+      grad.addColorStop(0.22, "rgba(255,126,42,.9)");
+      grad.addColorStop(1, "rgba(95,45,28,0)");
+    } else if (kind === "snow") {
+      grad.addColorStop(0, "rgba(255,255,255,.95)");
+      grad.addColorStop(0.45, "rgba(255,255,255,.55)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+    } else {
+      grad.addColorStop(0, "rgba(255,255,255,.55)");
+      grad.addColorStop(0.45, "rgba(255,255,255,.24)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  function FxPool(kind, options = {}) {
+    const maxCount = options.maxCount || 600;
+    const positions = new Float32Array(maxCount * 3);
+    const colors = new Float32Array(maxCount * 3);
+    const particles = [];
+    const color = new THREE.Color(options.color || 0xffffff);
+    for (let i = 0; i < maxCount; i++) {
+      positions[i * 3] = 0;
+      positions[i * 3 + 1] = -9999;
+      positions[i * 3 + 2] = 0;
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+      particles.push({
+        active: false,
+        x: 0, y: -9999, z: 0,
+        vx: 0, vy: 0, vz: 0,
+        age: 0, life: 1,
+        color: color.clone()
+      });
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3).setUsage(THREE.DynamicDrawUsage));
+    geometry.setDrawRange(0, maxCount);
+    const material = new THREE.PointsMaterial({
+      map: makeParticleTexture(kind),
+      size: options.size || 8,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: options.opacity ?? 0.45,
+      depthWrite: false,
+      vertexColors: true,
+      blending: options.blending || THREE.NormalBlending
+    });
+    const points = new THREE.Points(geometry, material);
+    points.frustumCulled = false;
+    points.renderOrder = options.renderOrder || 4;
+    scene.add(points);
+
+    return {
+      kind,
+      maxCount,
+      positions,
+      colors,
+      particles,
+      color,
+      geometry,
+      material,
+      points,
+      cursor: 0,
+      emit(params = {}) {
+        if (FX.particles <= 0) return;
+        const particle = particles[this.cursor];
+        this.cursor = (this.cursor + 1) % maxCount;
+        const tint = params.color !== undefined ? new THREE.Color(params.color) : color;
+        particle.active = true;
+        particle.x = params.x || 0;
+        particle.y = params.y || 0;
+        particle.z = params.z || 0;
+        particle.vx = params.vx || 0;
+        particle.vy = params.vy || 0;
+        particle.vz = params.vz || 0;
+        particle.age = 0;
+        particle.life = params.life || 1;
+        particle.color.copy(tint);
+      },
+      update(dt) {
+        let changed = false;
+        let activeCount = 0;
+        for (let i = 0; i < maxCount; i++) {
+          const particle = particles[i];
+          const pi = i * 3;
+          if (particle.active) {
+            particle.age += dt;
+            if (particle.age >= particle.life || FX.particles <= 0) {
+              particle.active = false;
+              positions[pi + 1] = -9999;
+            } else {
+              const k = particle.age / particle.life;
+              particle.x += particle.vx * dt;
+              particle.y += particle.vy * dt;
+              particle.z += particle.vz * dt;
+              particle.vy += (options.gravity || 0) * dt;
+              positions[pi] = particle.x;
+              positions[pi + 1] = particle.y;
+              positions[pi + 2] = particle.z;
+              const fade = 1 - smooth(k);
+              colors[pi] = particle.color.r * fade;
+              colors[pi + 1] = particle.color.g * fade;
+              colors[pi + 2] = particle.color.b * fade;
+              activeCount++;
+            }
+            changed = true;
+          }
+        }
+        this.points.visible = FX.particles > 0 && activeCount > 0;
+        if (changed) {
+          this.geometry.attributes.position.needsUpdate = true;
+          this.geometry.attributes.color.needsUpdate = true;
+        }
+      }
+    };
+  }
+
+  const fx = {
+    dust: FxPool("dust", { color: 0xb8a888, opacity: 0.35, size: 13, maxCount: 600, blending: THREE.NormalBlending, gravity: 1.6, renderOrder: 5 }),
+    spark: FxPool("spark", { color: 0xffd98a, opacity: 0.82, size: 7, maxCount: 520, blending: THREE.AdditiveBlending, gravity: -8, renderOrder: 6 }),
+    volley: FxPool("spark", { color: 0xfff3c0, opacity: 0.92, size: 11, maxCount: 420, blending: THREE.AdditiveBlending, gravity: -6, renderOrder: 7 }),
+    fire: FxPool("fire", { color: 0xff8a3c, opacity: 0.76, size: 15, maxCount: 560, blending: THREE.AdditiveBlending, gravity: 5, renderOrder: 6 }),
+    snow: FxPool("snow", { color: 0xffffff, opacity: 0.62, size: 5, maxCount: 480, blending: THREE.NormalBlending, gravity: -2, renderOrder: 8 })
+  };
+  fxPools.push(fx.dust, fx.spark, fx.volley, fx.fire, fx.snow);
+
   const fogPlanes = [];
   for (let i = 0; i < (cfg.weather?.fogCount || 8); i++) {
     const mesh = new THREE.Mesh(
@@ -616,19 +924,237 @@
     scene.add(rain);
   }
 
+  function effectGate(item, fade = 0.18) {
+    if (item.t0 === undefined && item.t1 === undefined) return 1;
+    const t0 = item.t0 ?? cfg.time.min;
+    const t1 = item.t1 ?? cfg.time.max;
+    if (H < t0 || H > t1) return 0;
+    return Math.min(clamp((H - t0) / fade, 0, 1), clamp((t1 - H) / fade, 0, 1));
+  }
+
+  function emitDustAt(x, z, count, radius, lift) {
+    const scaled = Math.max(0, Math.round(count * FX.particles));
+    for (let i = 0; i < scaled; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * radius;
+      fx.dust.emit({
+        x: x + Math.cos(a) * r,
+        y: terrainH(x, z) + (lift || 2),
+        z: z + Math.sin(a) * r,
+        vx: Math.cos(a) * (1.2 + Math.random() * 4),
+        vy: 4 + Math.random() * 8,
+        vz: Math.sin(a) * (1.2 + Math.random() * 4),
+        life: 0.9 + Math.random() * 0.8,
+        color: 0xb8a888
+      });
+    }
+  }
+
+  function emitSparkBurst(x, z, count, radius) {
+    const scaled = Math.max(0, Math.round(count * FX.particles));
+    const y = terrainH(x, z) + 5;
+    for (let i = 0; i < scaled; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 16 + Math.random() * 32;
+      fx.spark.emit({
+        x: x + (Math.random() - 0.5) * radius,
+        y,
+        z: z + (Math.random() - 0.5) * radius,
+        vx: Math.cos(a) * speed,
+        vy: 12 + Math.random() * 16,
+        vz: Math.sin(a) * speed,
+        life: 0.22 + Math.random() * 0.22,
+        color: 0xffd98a
+      });
+    }
+  }
+
+  function emitVolley(item) {
+    const width = item.width || 120;
+    const dir = item.dir || 0;
+    const nx = Math.cos(dir + Math.PI / 2);
+    const nz = Math.sin(dir + Math.PI / 2);
+    const shots = Math.max(4, Math.round((item.count || 18) * FX.particles));
+    for (let i = 0; i < shots; i++) {
+      const k = shots === 1 ? 0 : i / (shots - 1) - 0.5;
+      const x = item.at[0] + nx * width * k + (Math.random() - 0.5) * 5;
+      const z = item.at[1] + nz * width * k + (Math.random() - 0.5) * 5;
+      fx.volley.emit({
+        x,
+        y: terrainH(x, z) + 7,
+        z,
+        vx: Math.cos(dir) * (16 + Math.random() * 12),
+        vy: 7 + Math.random() * 8,
+        vz: Math.sin(dir) * (16 + Math.random() * 12),
+        life: 0.18 + Math.random() * 0.18,
+        color: 0xfff3c0
+      });
+      fx.dust.emit({
+        x,
+        y: terrainH(x, z) + 4,
+        z,
+        vx: Math.cos(dir) * (6 + Math.random() * 6),
+        vy: 6 + Math.random() * 4,
+        vz: Math.sin(dir) * (6 + Math.random() * 6),
+        life: 0.8 + Math.random() * 0.5,
+        color: 0xc8c0aa
+      });
+    }
+  }
+
+  function emitFireAt(item, count) {
+    const radius = item.radius || 24;
+    const scaled = Math.max(0, Math.round(count * FX.particles));
+    for (let i = 0; i < scaled; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * radius;
+      const x = item.at[0] + Math.cos(a) * r;
+      const z = item.at[1] + Math.sin(a) * r;
+      fx.fire.emit({
+        x,
+        y: terrainH(x, z) + 4,
+        z,
+        vx: (Math.random() - 0.5) * 6,
+        vy: 12 + Math.random() * 18,
+        vz: (Math.random() - 0.5) * 6,
+        life: 0.55 + Math.random() * 0.45,
+        color: Math.random() > 0.28 ? 0xff8a3c : 0x34302d
+      });
+    }
+  }
+
+  function emitSnow(count) {
+    const scaled = Math.max(0, Math.round(count * FX.particles));
+    const size = cfg.terrain.size || 760;
+    for (let i = 0; i < scaled; i++) {
+      const x = (Math.random() - 0.5) * size * 0.9;
+      const z = (Math.random() - 0.5) * size * 0.9;
+      fx.snow.emit({
+        x,
+        y: 95 + Math.random() * 70,
+        z,
+        vx: -3 + Math.random() * 5,
+        vy: -18 - Math.random() * 16,
+        vz: -2 + Math.random() * 4,
+        life: 3.4 + Math.random() * 2.2,
+        color: 0xffffff
+      });
+    }
+  }
+
+  const effectStates = (cfg.effects || []).map(() => ({ acc: 0, lastVolley: -Infinity }));
+
+  function makeArrowTexture(colorValue) {
+    const color = new THREE.Color(colorValue || 0xffd35c);
+    const canvas = document.createElement("canvas");
+    canvas.width = 192;
+    canvas.height = 32;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const base = `rgba(${Math.round(color.r * 255)},${Math.round(color.g * 255)},${Math.round(color.b * 255)},`;
+    for (let x = 0; x < canvas.width; x++) {
+      const k = (x % 48) / 48;
+      const alpha = 0.22 + smooth(1 - Math.abs(k - 0.5) * 2) * 0.58;
+      ctx.fillStyle = `${base}${alpha})`;
+      ctx.fillRect(x, 0, 1, canvas.height);
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.28)";
+    ctx.fillRect(0, 13, canvas.width, 6);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.repeat.set(1, 1);
+    return texture;
+  }
+
+  function makeArrowRibbon(item) {
+    const from = item.from;
+    const to = item.to;
+    const steps = item.segments || 12;
+    const baseWidth = item.width || 10;
+    const verts = [];
+    const uvs = [];
+    const indices = [];
+    const centers = [];
+    let length = 0;
+    for (let i = 0; i <= steps; i++) {
+      const k = i / steps;
+      const x = lerp(from[0], to[0], k);
+      const z = lerp(from[1], to[1], k);
+      if (i > 0) {
+        const prev = centers[i - 1];
+        length += Math.hypot(x - prev.x, z - prev.z);
+      }
+      centers.push({ x, z, dist: length });
+    }
+    for (let i = 0; i <= steps; i++) {
+      const center = centers[i];
+      const prev = centers[Math.max(0, i - 1)];
+      const next = centers[Math.min(steps, i + 1)];
+      const tx = next.x - prev.x;
+      const tz = next.z - prev.z;
+      const len = Math.hypot(tx, tz) || 1;
+      const sx = -tz / len;
+      const sz = tx / len;
+      const k = i / steps;
+      const width = baseWidth * lerp(0.35, 0.55, smooth(Math.min(k, 0.86) / 0.86));
+      const y = terrainH(center.x, center.z) + 6;
+      verts.push(
+        center.x + sx * width, y, center.z + sz * width,
+        center.x - sx * width, y, center.z - sz * width
+      );
+      uvs.push(center.dist / 42, 1, center.dist / 42, 0);
+      if (i < steps) {
+        const base = i * 2;
+        indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+      }
+    }
+
+    const last = centers[steps];
+    const prev = centers[steps - 1];
+    const tx = last.x - prev.x;
+    const tz = last.z - prev.z;
+    const len = Math.hypot(tx, tz) || 1;
+    const fx = tx / len;
+    const fz = tz / len;
+    const sx = -fz;
+    const sz = fx;
+    const headLen = item.head || 18;
+    const headWidth = baseWidth * 0.9;
+    const y = terrainH(last.x, last.z) + 6.4;
+    const headBase = verts.length / 3;
+    verts.push(
+      last.x + sx * headWidth - fx * headLen * 0.3, y, last.z + sz * headWidth - fz * headLen * 0.3,
+      last.x - sx * headWidth - fx * headLen * 0.3, y, last.z - sz * headWidth - fz * headLen * 0.3,
+      last.x + fx * headLen, y + 0.3, last.z + fz * headLen
+    );
+    uvs.push(length / 42, 1, length / 42, 0, length / 42 + 0.4, 0.5);
+    indices.push(headBase, headBase + 1, headBase + 2);
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(verts), 3));
+    geometry.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(uvs), 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    geometry.setDrawRange(0, 0);
+    const texture = makeArrowTexture(item.color || 0xffd35c);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      color: item.color || 0xffd35c,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.renderOrder = 3;
+    scene.add(mesh);
+    return { item, mesh, texture, indexCount: indices.length };
+  }
+
   const arrowObjs = [];
   (cfg.arrows || []).forEach(item => {
-    const from = new THREE.Vector3(item.from[0], terrainH(item.from[0], item.from[1]) + 8, item.from[1]);
-    const to = new THREE.Vector3(item.to[0], terrainH(item.to[0], item.to[1]) + 8, item.to[1]);
-    const dir = to.clone().sub(from);
-    const len = dir.length();
-    const arrow = new THREE.ArrowHelper(dir.normalize(), from, len, item.color || 0xffd35c, item.head || 18, item.width || 10);
-    arrow.line.material.transparent = true;
-    arrow.line.material.opacity = 0;
-    arrow.cone.material.transparent = true;
-    arrow.cone.material.opacity = 0;
-    scene.add(arrow);
-    arrowObjs.push({ item, arrow });
+    arrowObjs.push(makeArrowRibbon(item));
   });
 
   const verifyCenter = (verifyMode && cfg.camera.verifyCenter) || cfg.camera.center;
@@ -643,6 +1169,34 @@
     tgt: new THREE.Vector3(verifyCenter[0], verifyCenter[1], verifyCenter[2]),
     init: false
   };
+  const shake = {
+    start: -Infinity,
+    amp: 0,
+    duration: 1.2
+  };
+  let lastShotCaption = null;
+
+  function triggerShake(amount, duration = 1.2) {
+    if (!FX.shake || verifyMode || amount <= 0) return;
+    shake.start = performance.now() / 1000;
+    shake.amp = Math.max(shake.amp, amount);
+    shake.duration = duration;
+  }
+
+  function shakeOffset() {
+    if (!FX.shake || verifyMode || shake.amp <= 0) return new THREE.Vector3();
+    const now = performance.now() / 1000;
+    const age = now - shake.start;
+    if (age < 0 || age > shake.duration) {
+      shake.amp = 0;
+      return new THREE.Vector3();
+    }
+    const decay = 1 - smooth(clamp(age / shake.duration, 0, 1));
+    const waveA = Math.sin(age * 68.3);
+    const waveB = Math.cos(age * 52.7);
+    const amp = shake.amp * decay;
+    return new THREE.Vector3(waveA * amp, Math.sin(age * 91.1) * amp * 0.55, waveB * amp);
+  }
 
   function orbitPos(center, az, polar, radius) {
     return new THREE.Vector3(
@@ -679,7 +1233,19 @@
     const focus = caption.focus || cfg.camera.focus || [0, 0];
     const target = new THREE.Vector3(focus[0], terrainH(focus[0], focus[1]) + 7, focus[1]);
     cam.center.lerp(target, 1 - Math.exp(-dt * 1.2));
-    return { p: orbitPos(cam.center, cam.az, cfg.camera.autoPolar || 0.98, cfg.camera.autoRadius || 260), t: cam.center.clone(), k: 1.6 };
+    let radius = cfg.camera.autoRadius || 260;
+    let polar = cfg.camera.autoPolar || 0.98;
+    const shot = caption?.shot;
+    if (shot) {
+      const duration = shot.duration || caption.duration || cfg.captionDuration || 0.75;
+      const shotK = smooth(clamp((time - caption.t) / duration, 0, 1));
+      if (shot.radius !== undefined) radius = lerp(radius, shot.radius, shotK);
+      if (shot.polar !== undefined) polar = lerp(polar, shot.polar, shotK);
+      if (shot.type === "push") radius = lerp(radius * 1.12, radius, shotK);
+      if (shot.type === "pull") radius = lerp(radius * 0.82, radius, shotK);
+      if (shot.type === "crane") polar = lerp((cfg.camera.autoPolar || 0.98) + 0.12, polar, shotK);
+    }
+    return { p: orbitPos(cam.center, cam.az, polar, radius), t: cam.center.clone(), k: shot ? 2.1 : 1.6 };
   }
 
   const pointers = new Map();
@@ -818,6 +1384,7 @@
     label: eventLabel(caption),
     type: caption.eventType || inferEventType(caption)
   }));
+  const eventLabels = [];
   timelineEvents.forEach(event => {
     const left = ((event.t - cfg.time.min) / (cfg.time.max - cfg.time.min) * 100);
     const tick = document.createElement("div");
@@ -830,6 +1397,7 @@
     label.style.left = left + "%";
     label.textContent = event.label || "転機";
     wrap.appendChild(label);
+    eventLabels.push({ event, label, pulsed: false });
   });
 
   const hourLabels = $("hourLabels");
@@ -852,6 +1420,7 @@
     $("speedBtn").textContent = speedLabels[speedIdx];
   });
 
+  let lastWakoku = "";
   function updateClock() {
     const hour = Math.floor(H);
     const minute = Math.floor((H - hour) * 60);
@@ -860,7 +1429,19 @@
     (cfg.time.wakoku || []).forEach(item => {
       if (H >= item[0]) label = item[1];
     });
-    $("clockWakoku").textContent = label;
+    const wakokuEl = $("clockWakoku");
+    if (label !== lastWakoku) {
+      if (lastWakoku && !reducedMotion) {
+        wakokuEl.classList.add("fade");
+        window.setTimeout(() => {
+          wakokuEl.textContent = label;
+          wakokuEl.classList.remove("fade");
+        }, 150);
+      } else {
+        wakokuEl.textContent = label;
+      }
+      lastWakoku = label;
+    }
     track.value = H;
     fill.style.width = ((H - cfg.time.min) / (cfg.time.max - cfg.time.min) * 100) + "%";
   }
@@ -877,6 +1458,9 @@
     if (caption !== lastCaption) {
       $("capTitle").textContent = caption.title;
       $("capBody").textContent = caption.body;
+      el.classList.remove("wipe");
+      void el.offsetWidth;
+      if (!reducedMotion) el.classList.add("wipe");
       lastCaption = caption;
     }
     el.classList.add("show");
@@ -886,10 +1470,60 @@
     $("hint").style.opacity = 0;
   }, 9000);
 
+  function updateSkyEnvironment(day, dt) {
+    const topColor = toColor(cfg.sky.morning).lerp(toColor(cfg.sky.noon), day);
+    const horizonColor = toColor(cfg.sky.fog).lerp(toColor(cfg.sky.clearFog || cfg.sky.fog), day);
+    scene.background.copy(topColor);
+    scene.fog.color.copy(horizonColor);
+    if (skyDome) {
+      skyDome.material.uniforms.topColor.value.copy(topColor);
+      skyDome.material.uniforms.horizonColor.value.copy(horizonColor);
+    }
+
+    const night = !!cfg.sky.nightMode;
+    sun.color.set(night ? 0x9fb4d8 : 0xfff2dd);
+    sun.intensity = night ? 0.32 + day * 0.1 : 0.75 + day * 0.5;
+    hemi.intensity = night ? 0.42 : 0.85;
+    hemi.color.set(night ? 0xaebbd8 : 0xdfe8f0);
+    hemi.groundColor.set(night ? 0x263142 : 0x48503e);
+    sun.position.set(Math.cos(day * 1.2 + 0.2) * 360, 270 + day * 180, -160);
+    if (sunSprite) {
+      const skyRadius = (cfg.terrain.size || 760) * 1.34;
+      sunSprite.position.copy(sun.position).normalize().multiplyScalar(skyRadius);
+      sunSprite.material.color.set(night ? 0xdde8ff : 0xfff1bd);
+      sunSprite.material.opacity = night ? 0.45 : 0.72;
+    }
+    const cloudLimit = (cfg.terrain.size || 760) * 0.95;
+    cloudSprites.forEach(sprite => {
+      sprite.position.x += sprite.userData.vx * dt;
+      sprite.position.z += sprite.userData.vz * dt;
+      if (sprite.position.x > cloudLimit) sprite.position.x = -cloudLimit;
+      if (sprite.position.x < -cloudLimit) sprite.position.x = cloudLimit;
+      if (sprite.position.z > cloudLimit) sprite.position.z = -cloudLimit;
+      if (sprite.position.z < -cloudLimit) sprite.position.z = cloudLimit;
+    });
+  }
+
   const clock = new THREE.Clock();
+  const tierProbe = {
+    enabled: FX.tier === "auto",
+    frames: 0,
+    totalMs: 0
+  };
   function tick() {
     requestAnimationFrame(tick);
-    const dt = Math.min(clock.getDelta(), 0.05);
+    const rawDt = clock.getDelta();
+    const dt = Math.min(rawDt, 0.05);
+    if (tierProbe.enabled) {
+      tierProbe.frames += 1;
+      tierProbe.totalMs += rawDt * 1000;
+      if (tierProbe.frames >= 120) {
+        const avgMs = tierProbe.totalMs / tierProbe.frames;
+        applyTier(avgMs > 26 ? "low" : avgMs > 18 ? "medium" : "high");
+        tierProbe.enabled = false;
+      }
+    }
+    const beforeH = H;
     if (playing) {
       H += speeds[speedIdx] * dt;
       if (H >= cfg.time.max) {
@@ -900,15 +1534,36 @@
     }
     H = clamp(H, cfg.time.min, cfg.time.max);
 
+    const activeCaption = currentCaption(H);
+    if (activeCaption && activeCaption !== lastShotCaption) {
+      lastShotCaption = activeCaption;
+      triggerShake(activeCaption.shot?.shake ? activeCaption.shot.shake * 2.2 : 0, 1.2);
+    } else if (!activeCaption) {
+      lastShotCaption = null;
+    }
+    timelineEvents.forEach(event => {
+      if (beforeH < event.t && H >= event.t && /^(charge|rout|betrayal)$/.test(event.type || "")) {
+        triggerShake(0.8, 1.0);
+      }
+    });
+    eventLabels.forEach(item => {
+      if (beforeH < item.event.t && H >= item.event.t && !item.pulsed) {
+        item.pulsed = true;
+        if (!reducedMotion) {
+          item.label.classList.remove("pulse");
+          void item.label.offsetWidth;
+          item.label.classList.add("pulse");
+        }
+      }
+      if (H < item.event.t - 0.02) item.pulsed = false;
+    });
+
     const day = smooth(clamp((H - cfg.time.min) / (cfg.sky.dayLength || 3), 0, 1));
-    scene.background.copy(toColor(cfg.sky.morning).lerp(toColor(cfg.sky.noon), day));
-    scene.fog.color.copy(toColor(cfg.sky.fog).lerp(toColor(cfg.sky.clearFog || cfg.sky.fog), day));
+    updateSkyEnvironment(day, dt);
     const fogPeakRaw = cfg.weather?.fogPeak ? cfg.weather.fogPeak(H) : clamp((cfg.time.min + 1.4 - H) / 1.4, 0, 1);
     const fogPeak = fogPeakRaw * weatherScale;
     const baseFogDensity = weatherScale === 0 ? (cfg.sky.verifyFogDensity || 0.00028) : (cfg.sky.fogDensity || 0.002);
     scene.fog.density = baseFogDensity + smooth(fogPeak) * (cfg.sky.fogBoost || 0.008);
-    sun.intensity = 0.75 + day * 0.5;
-    sun.position.set(Math.cos(day * 1.2 + 0.2) * 360, 270 + day * 180, -160);
 
     fogPlanes.forEach(mesh => {
       const fogOpacityScale = cfg.weather?.fogOpacityScale ?? 0.58;
@@ -955,7 +1610,32 @@
 
       const state = stateForUnit(unit, H, alpha, obj.vel.lengthSq());
       setUnitStateSprite(obj, state);
-      if (obj.stateLabel) obj.stateLabel.material.opacity = alpha;
+      if (FX.particles > 0 && !verifyMode && alpha > 0.05) {
+        const dustRate = state === "交戦" ? 8 : state === "前進" ? 3 : 0;
+        obj.fxDustAcc = (obj.fxDustAcc || 0) + dustRate * FX.particles * dt;
+        const dustCount = Math.floor(obj.fxDustAcc);
+        if (dustCount > 0) {
+          obj.fxDustAcc -= dustCount;
+          const radius = state === "交戦" ? 13 * obj.forceScale : 8 * obj.forceScale;
+          emitDustAt(p.x, p.z, Math.min(dustCount, 6), radius, 1.6);
+        }
+      }
+      const now = performance.now();
+      if (obj.stateLabel) {
+        const bornK = smooth(clamp((now - obj.stateLabel.userData.bornAt) / 300, 0, 1));
+        obj.stateLabel.material.opacity = alpha * bornK;
+      }
+      obj.retiringStateLabels = obj.retiringStateLabels.filter(sprite => {
+        const fadeK = 1 - smooth(clamp((now - sprite.userData.retireAt) / 150, 0, 1));
+        sprite.material.opacity = alpha * fadeK;
+        if (fadeK <= 0.01) {
+          obj.group.remove(sprite);
+          if (sprite.material.map) sprite.material.map.dispose();
+          sprite.material.dispose();
+          return false;
+        }
+        return true;
+      });
       updateStateBadge(unit.id, state);
       if (cam.unit === unit.id) {
         const stateEl = $("infoState");
@@ -966,19 +1646,40 @@
       }
 
       const scatter = 1 + (1 - alpha) * 2.2;
-      const wobble = performance.now() * 0.002;
+      const wobble = now * 0.002;
       const rotY = obj.group.rotation.y;
       const cr = Math.cos(rotY);
       const sr = Math.sin(rotY);
+      const moving = obj.vel.lengthSq() > 0.01;
+      if (obj.flag) {
+        const pos = obj.flag.geometry.attributes.position;
+        const base = obj.flag.userData.basePositions;
+        for (let i = 0; i < pos.count; i++) {
+          const bi = i * 3;
+          const baseX = base[bi];
+          const baseY = base[bi + 1];
+          const mastK = clamp((baseX + 2.75) / 5.5, 0, 1);
+          const heightK = clamp((baseY + 10) / 20, 0, 1);
+          const wave = Math.sin(now * 0.0032 + baseY * 0.45 + Number(unit.id.length)) * 0.55 * mastK * (0.45 + heightK * 0.55);
+          pos.setXYZ(i, baseX + wave, baseY, base[bi + 2]);
+        }
+        pos.needsUpdate = true;
+      }
       for (let i = 0; i < obj.offsets.length; i++) {
         const [ox, oz, scale] = obj.offsets[i];
         const lx = ox * scatter;
         const lz = oz * scatter;
         const wx = p.x + lx * cr + lz * sr;
         const wz = p.z - lx * sr + lz * cr;
-        const bob = obj.vel.lengthSq() > 0.01 ? Math.sin(wobble * 6 + i) * 0.25 : 0;
+        const phase = wobble * (moving ? 6 : 1.2) + i;
+        const bob = Math.sin(phase) * (moving ? 0.35 : 0.06);
         dummy.position.set(lx, terrainH(wx, wz) - y + bob, lz);
         dummy.scale.setScalar(scale);
+        dummy.rotation.set(moving ? -0.08 : 0, 0, moving ? Math.sin(phase) * 0.06 : 0);
+        if (alpha < 0.5 && i % 3 === 0) {
+          dummy.rotation.z += (1 - alpha) * 1.4;
+          dummy.scale.y = Math.max(0.22, scale * (0.5 + alpha));
+        }
         dummy.updateMatrix();
         obj.inst.setMatrixAt(i, dummy.matrix);
       }
@@ -989,17 +1690,70 @@
       obj.label.scale.set(obj.label.userData.aspect * scale, scale, 1);
       if (obj.stateLabel) {
         const stateScale = clamp(dist * 0.028, 5.2, 14);
-        obj.stateLabel.scale.set(obj.stateLabel.userData.aspect * stateScale, stateScale, 1);
+        const bornK = smooth(clamp((performance.now() - obj.stateLabel.userData.bornAt) / 300, 0, 1));
+        const pop = 0.72 + bornK * 0.28;
+        obj.stateLabel.scale.set(obj.stateLabel.userData.aspect * stateScale * pop, stateScale * pop, 1);
       }
+      obj.retiringStateLabels.forEach(sprite => {
+        const stateScale = clamp(dist * 0.028, 5.2, 14);
+        sprite.scale.set(sprite.userData.aspect * stateScale, stateScale, 1);
+      });
     }
 
-    arrowObjs.forEach(({ item, arrow }) => {
+    (cfg.effects || []).forEach((item, index) => {
+      if (FX.particles <= 0) return;
+      if ((item.type === "snow" || item.weatherBound) && weatherScale === 0) return;
+      const gate = effectGate(item);
+      if (gate <= 0) return;
+      const state = effectStates[index];
+      if (item.type === "clash") {
+        state.acc += dt * gate * (item.rate || 9);
+        const count = Math.floor(state.acc);
+        if (count > 0) {
+          state.acc -= count;
+          emitDustAt(item.at[0], item.at[1], Math.min(count, 8), item.radius || 42, 2.4);
+          emitSparkBurst(item.at[0], item.at[1], Math.min(count * 2, 10), item.radius || 42);
+        }
+      } else if (item.type === "volley") {
+        const interval = item.interval || 0.55;
+        if (H - state.lastVolley >= interval * gate) {
+          state.lastVolley = H;
+          emitVolley(item);
+        }
+      } else if (item.type === "fire") {
+        state.acc += dt * gate * (item.rate || 12);
+        const count = Math.floor(state.acc);
+        if (count > 0) {
+          state.acc -= count;
+          emitFireAt(item, Math.min(count, 8));
+        }
+      } else if (item.type === "snow") {
+        state.acc += dt * gate * (item.rate || 26);
+        const count = Math.floor(state.acc);
+        if (count > 0) {
+          state.acc -= count;
+          emitSnow(Math.min(count, 12));
+        }
+      }
+    });
+
+    fxPools.forEach(pool => pool.update(dt));
+
+    placeSprites.forEach(sprite => {
+      const dist = camera.position.distanceTo(sprite.position);
+      const fade = 1 - smooth(clamp((dist - 380) / 260, 0, 1));
+      sprite.material.opacity = sprite.userData.baseOpacity * lerp(0.22, 1, fade);
+    });
+
+    arrowObjs.forEach(({ item, mesh, texture, indexCount }) => {
       let opacity = 0;
       if (H >= item.t0 && H <= item.t1) {
         opacity = Math.min(clamp((H - item.t0) / 0.18, 0, 1), clamp((item.t1 - H) / 0.18, 0, 1));
       }
-      arrow.line.material.opacity = opacity * 0.68;
-      arrow.cone.material.opacity = opacity * 0.86;
+      const wipe = clamp((H - item.t0) / 0.26, 0, 1);
+      mesh.material.opacity = opacity * 0.78;
+      mesh.geometry.setDrawRange(0, Math.max(0, Math.floor(indexCount * wipe)));
+      texture.offset.x -= dt * 0.8;
     });
 
     const des = desiredCamera(H, dt);
@@ -1012,7 +1766,7 @@
     cam.pos.lerp(des.p, k);
     cam.tgt.lerp(des.t, k);
     cam.pos.y = Math.max(cam.pos.y, terrainH(cam.pos.x, cam.pos.z) + 8);
-    camera.position.copy(cam.pos);
+    camera.position.copy(cam.pos).add(shakeOffset());
     camera.lookAt(cam.tgt);
 
     const az = Math.atan2(camera.position.z - cam.tgt.z, camera.position.x - cam.tgt.x);

@@ -27,16 +27,21 @@
     wakoku
   });
 
-  const sky = (morning, noon, fog, opts = {}) => ({
-    morning,
-    noon,
-    fog,
-    clearFog: opts.clearFog || noon,
-    fogDensity: opts.fogDensity ?? 0.00016,
-    verifyFogDensity: opts.verifyFogDensity ?? 0.00008,
-    fogBoost: opts.fogBoost ?? 0.00018,
-    dayLength: opts.dayLength || 3.5
-  });
+  const sky = (morning, noon, fog, opts = {}) => {
+    const data = {
+      morning,
+      noon,
+      fog,
+      clearFog: opts.clearFog || noon,
+      fogDensity: opts.fogDensity ?? 0.00016,
+      verifyFogDensity: opts.verifyFogDensity ?? 0.00008,
+      fogBoost: opts.fogBoost ?? 0.00018,
+      dayLength: opts.dayLength || 3.5
+    };
+    if (opts.nightMode) data.nightMode = true;
+    if (opts.exposure !== undefined) data.exposure = opts.exposure;
+    return data;
+  };
 
   const terrain = (opts = {}) => ({
     size: opts.size || 820,
@@ -78,7 +83,49 @@
     autoRadius: 270
   });
 
-  window.EXTRA_BATTLE_SCENES = {
+  function enrichScenes(scenes) {
+    const moments = {
+      "komaki-nagakute": { at: [104, 66], t0: 11.1, t1: 13.1, radius: 46 },
+      itsukushima: { at: [78, -18], t0: 5.6, t1: 7.3, radius: 44 },
+      anegawa: { at: [-22, -8], t0: 9.6, t1: 12.1, radius: 54 },
+      "kawagoe-night": { at: [30, 14], t0: 2.5, t1: 4.4, radius: 48, fire: true },
+      shizugatake: { at: [34, -12], t0: 9.8, t1: 12.7, radius: 52 },
+      honnoji: { at: [10, 4], t0: 5.9, t1: 7.2, radius: 34 },
+      "tennoji-okayama": { at: [42, 14], t0: 11.7, t1: 14.4, radius: 50 },
+      mimikawa: { at: [18, 24], t0: 11.4, t1: 14.1, radius: 50 },
+      hitotoribashi: { at: [-12, 4], t0: 11.3, t1: 14.2, radius: 48 },
+      "gassan-toda": { at: [0, 4], t0: 11.6, t1: 15.8, radius: 42 },
+      "osaka-summer": { at: [-24, -2], t0: 10.6, t1: 13.4, radius: 58 },
+      "osaka-winter": { at: [-116, -82], t0: 12.2, t1: 14.6, radius: 44 }
+    };
+    Object.entries(scenes).forEach(([slug, scene]) => {
+      const moment = moments[slug];
+      if (!moment) return;
+      scene.effects ||= [];
+      if (!scene.effects.some(effect => effect.type === "clash")) {
+        scene.effects.push({ type: "clash", t0: moment.t0, t1: moment.t1, at: moment.at, radius: moment.radius, rate: 9 });
+      }
+      if (moment.fire && !scene.effects.some(effect => effect.type === "fire")) {
+        scene.effects.push({ type: "fire", t0: 2.8, t1: 4.8, at: moment.at, radius: 22, rate: 8 });
+      }
+      const indices = [1, Math.floor(scene.captions.length / 2), scene.captions.length - 1];
+      indices.forEach((index, order) => {
+        const caption = scene.captions[index];
+        if (!caption || caption.shot) return;
+        const types = ["push", "crane", "pull"];
+        caption.shot = {
+          type: types[order],
+          radius: order === 0 ? 215 : order === 1 ? 285 : 330,
+          polar: order === 1 ? 0.76 : order === 0 ? 0.86 : 0.92,
+          duration: 0.5 + order * 0.06,
+          shake: order === 0 ? 0.26 : order === 1 ? 0.16 : 0.1
+        };
+      });
+    });
+    return scenes;
+  }
+
+  window.EXTRA_BATTLE_SCENES = enrichScenes({
     "komaki-nagakute": {
       title: "決戦 小牧・長久手",
       eyebrow: "対陣機動",
@@ -274,7 +321,7 @@
       eyebrow: "夜襲突破",
       dateLabel: "天文十五年 四月二十日",
       time: baseTime(0, 5.5, [[0, "子の刻"], [2, "丑の刻"], [4, "寅の刻"], [5, "卯の刻"]]),
-      sky: sky(0x252a32, 0x667480, 0x3d4244, { fogDensity: 0.00025, fogBoost: 0.00035, dayLength: 5.5 }),
+      sky: sky(0x252a32, 0x667480, 0x3d4244, { fogDensity: 0.00025, fogBoost: 0.00035, dayLength: 5.5, nightMode: true, exposure: 0.92 }),
       camera: commonCamera([0, 8], [24, 16], 430, -2.42),
       terrain: terrain({
         colors: palette.night,
@@ -440,6 +487,10 @@
         { t0: 5, t1: 6.3, from: [148, -156], to: [42, -28], color: 0x9fc5f0, head: 18, width: 10 },
         { t0: 6.4, t1: 7.6, from: [44, 18], to: [0, 0], color: 0x9fc5f0, head: 14, width: 8 }
       ],
+      effects: [
+        { type: "clash", t0: 5.9, t1: 7.2, at: [10, 4], radius: 34, rate: 8 },
+        { type: "fire", t0: 6.55, t1: 8, at: [0, 0], radius: 28, rate: 14 }
+      ],
       timelineEvents: [
         { t: 4, label: "進入", type: "phase" },
         { t: 5.4, label: "包囲", type: "phase" },
@@ -449,10 +500,10 @@
       ],
       captions: [
         { t: 4.2, title: "京へ進入", body: "明智軍は未明の京へ入り、本能寺へ向けて兵を集める。", focus: [-86, 60], duration: 0.72 },
-        { t: 5.4, title: "包囲", body: "本能寺の四方に明智勢が迫り、寺内の織田方は孤立する。", focus: [0, 0], duration: 0.72 },
-        { t: 6, title: "開戦", body: "門前から攻撃が始まり、少数の織田方が寺内で防戦する。", focus: [22, 8], duration: 0.72 },
-        { t: 6.8, title: "炎上", body: "火の手が上がり、信長の退路は失われる。", focus: [0, 0], duration: 0.72 },
-        { t: 7.4, title: "壊滅", body: "本能寺は制圧され、京都の情勢は一気に反転する。", focus: [0, 0], duration: 0.72 }
+        { t: 5.4, title: "包囲", body: "本能寺の四方に明智勢が迫り、寺内の織田方は孤立する。", focus: [0, 0], duration: 0.72, shot: { type: "push", radius: 210, polar: 0.9, duration: 0.42, shake: 0.12 } },
+        { t: 6, title: "開戦", body: "門前から攻撃が始まり、少数の織田方が寺内で防戦する。", focus: [22, 8], duration: 0.72, shot: { type: "push", radius: 185, polar: 0.86, duration: 0.38, shake: 0.25 } },
+        { t: 6.8, title: "炎上", body: "火の手が上がり、信長の退路は失われる。", focus: [0, 0], duration: 0.72, shot: { type: "crane", radius: 225, polar: 0.72, duration: 0.48, shake: 0.32 } },
+        { t: 7.4, title: "壊滅", body: "本能寺は制圧され、京都の情勢は一気に反転する。", focus: [0, 0], duration: 0.72, shot: { type: "pull", radius: 285, polar: 0.92, duration: 0.5, shake: 0.18 } }
       ],
       weather: {
         fogCount: 6,
@@ -750,6 +801,10 @@
         { t0: 13.3, t1: 16, from: [178, -132], to: [-14, 20], color: 0xffd35c, head: 20, width: 12 },
         { t0: 13.4, t1: 16, from: [192, 80], to: [16, 90], color: 0xffd35c, head: 20, width: 12 }
       ],
+      effects: [
+        { type: "clash", t0: 10.6, t1: 13.4, at: [-24, -2], radius: 58, rate: 10 },
+        { type: "clash", t0: 12.2, t1: 14.8, at: [78, -16], radius: 48, rate: 9 }
+      ],
       timelineEvents: [
         { t: 8, label: "布陣", type: "phase" },
         { t: 10.6, label: "開戦", type: "clash" },
@@ -759,10 +814,10 @@
       ],
       captions: [
         { t: 8.4, title: "城外へ布陣", body: "豊臣方は大坂城外へ出て、徳川の大軍を迎える。", focus: [-72, 36], duration: 0.88 },
-        { t: 10.6, title: "開戦", body: "天王寺・岡山方面で広く戦闘が始まり、豊臣方は正面突破を狙う。", focus: [-18, 0], duration: 0.88 },
-        { t: 12.4, title: "突撃", body: "真田隊が徳川本陣へ迫り、一時的に大きな動揺を起こす。", focus: [78, -16], duration: 0.88 },
-        { t: 14.2, title: "包囲", body: "徳川軍は兵力差を活かして側面を包み、豊臣方の突出を断つ。", focus: [30, 40], duration: 0.88 },
-        { t: 15.2, title: "落城へ", body: "城外の突出部は包囲で崩れ、城内の秀頼勢だけが残って終局へ向かう。", focus: [-134, 132], duration: 0.88 }
+        { t: 10.6, title: "開戦", body: "天王寺・岡山方面で広く戦闘が始まり、豊臣方は正面突破を狙う。", focus: [-18, 0], duration: 0.88, shot: { type: "push", radius: 230, polar: 0.9, duration: 0.48, shake: 0.2 } },
+        { t: 12.4, title: "突撃", body: "真田隊が徳川本陣へ迫り、一時的に大きな動揺を起こす。", focus: [78, -16], duration: 0.88, shot: { type: "push", radius: 190, polar: 0.82, duration: 0.46, shake: 0.42 } },
+        { t: 14.2, title: "包囲", body: "徳川軍は兵力差を活かして側面を包み、豊臣方の突出を断つ。", focus: [30, 40], duration: 0.88, shot: { type: "crane", radius: 300, polar: 0.74, duration: 0.58, shake: 0.18 } },
+        { t: 15.2, title: "落城へ", body: "城外の突出部は包囲で崩れ、城内の秀頼勢だけが残って終局へ向かう。", focus: [-134, 132], duration: 0.88, shot: { type: "pull", radius: 340, polar: 0.92, duration: 0.6, shake: 0.16 } }
       ],
       weather: weather(5, 0.04),
       captionDuration: 0.86
@@ -817,6 +872,11 @@
         { t0: 12, t1: 15, from: [138, -8], to: [-78, 90], color: 0xffd35c, head: 16, width: 8 },
         { t0: 14.4, t1: 17, from: [-110, -78], to: [42, -118], color: 0x9fc5f0, head: 18, width: 10 }
       ],
+      effects: [
+        { type: "snow", rate: 24, weatherBound: true },
+        { type: "volley", t0: 10.6, t1: 14.2, at: [-128, -82], width: 104, dir: 0.08, interval: 0.62 },
+        { type: "clash", t0: 12.2, t1: 14.6, at: [-116, -82], radius: 44, rate: 8 }
+      ],
       timelineEvents: [
         { t: 8, label: "包囲", type: "phase" },
         { t: 10.6, label: "突撃", type: "charge" },
@@ -826,10 +886,10 @@
       ],
       captions: [
         { t: 8.4, title: "包囲", body: "徳川軍は大坂城の周囲に巨大な包囲線を置き、堀と外郭へ圧力をかける。", focus: [-34, 48], duration: 0.9 },
-        { t: 10.6, title: "突撃", body: "井伊・藤堂勢が真田丸へ攻め寄せる。", focus: [-90, -86], duration: 0.9 },
-        { t: 12.6, title: "開戦", body: "真田丸の防御線が攻撃を受け止め、徳川勢は正面で止められる。", focus: [-132, -78], duration: 0.9 },
-        { t: 14.2, title: "撃退", body: "真田丸方面の攻撃は大きな損害を出し、徳川勢が後退する。", focus: [-74, -96], duration: 0.9 },
-        { t: 16, title: "和議へ", body: "砲撃と包囲の圧力が続き、冬の陣は和議と堀の処理へ向かう。", focus: [-76, 92], duration: 0.9 }
+        { t: 10.6, title: "突撃", body: "井伊・藤堂勢が真田丸へ攻め寄せる。", focus: [-90, -86], duration: 0.9, shot: { type: "push", radius: 220, polar: 0.88, duration: 0.5, shake: 0.28 } },
+        { t: 12.6, title: "開戦", body: "真田丸の防御線が攻撃を受け止め、徳川勢は正面で止められる。", focus: [-132, -78], duration: 0.9, shot: { type: "push", radius: 195, polar: 0.82, duration: 0.45, shake: 0.32 } },
+        { t: 14.2, title: "撃退", body: "真田丸方面の攻撃は大きな損害を出し、徳川勢が後退する。", focus: [-74, -96], duration: 0.9, shot: { type: "pull", radius: 300, polar: 0.9, duration: 0.55, shake: 0.22 } },
+        { t: 16, title: "和議へ", body: "砲撃と包囲の圧力が続き、冬の陣は和議と堀の処理へ向かう。", focus: [-76, 92], duration: 0.9, shot: { type: "crane", radius: 330, polar: 0.76, duration: 0.65, shake: 0.08 } }
       ],
       weather: {
         fogCount: 8,
@@ -839,5 +899,5 @@
       },
       captionDuration: 0.88
     }
-  };
+  });
 })();

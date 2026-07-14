@@ -132,6 +132,12 @@ canvas {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.25em;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+#clockBox .wakoku.fade {
+  opacity: 0;
+  transform: translateY(3px);
 }
 
 #compass {
@@ -250,6 +256,10 @@ canvas {
   padding: 3px 14px 3px 18px;
 }
 
+#caption.wipe .cap-title {
+  animation: caption-wipe 450ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
 #caption .cap-body {
   border-top: 2px solid var(--gold);
   font-family: var(--mincho);
@@ -259,6 +269,10 @@ canvas {
   line-height: 1.5;
   padding: 8px 18px;
   text-shadow: 0 1px 2px #000;
+}
+
+#caption.wipe .cap-body {
+  animation: caption-wipe 450ms cubic-bezier(.22, 1, .36, 1) 120ms both;
 }
 
 #introCut {
@@ -314,6 +328,7 @@ canvas {
   object-fit: cover;
   transform: scale(1.02);
   filter: saturate(0.98) contrast(1.08) brightness(0.88);
+  animation: intro-slow-zoom 8s cubic-bezier(.22, 1, .36, 1) both;
 }
 
 #introCut.from-card .intro-bg {
@@ -335,10 +350,25 @@ canvas {
 }
 
 #introCut .intro-kicker {
+  position: relative;
+  display: inline-block;
   color: var(--gold);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.26em;
+}
+
+#introCut .intro-kicker::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -8px;
+  width: 100%;
+  height: 1px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: intro-rule 900ms cubic-bezier(.22, 1, .36, 1) 220ms forwards;
 }
 
 #introCut .intro-title {
@@ -350,6 +380,7 @@ canvas {
   line-height: 1.1;
   letter-spacing: 0.08em;
   text-shadow: 0 2px 18px #000;
+  animation: intro-title-settle 900ms cubic-bezier(.22, 1, .36, 1) both;
 }
 
 #introCut .intro-body {
@@ -384,6 +415,48 @@ canvas {
   to {
     transform: scale(1.02);
     filter: saturate(0.98) contrast(1.08) brightness(0.88);
+  }
+}
+
+@keyframes intro-slow-zoom {
+  from {
+    transform: scale(1.08);
+  }
+
+  to {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes intro-title-settle {
+  from {
+    opacity: 0;
+    letter-spacing: 0.35em;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    letter-spacing: 0.08em;
+    transform: translateY(0);
+  }
+}
+
+@keyframes intro-rule {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes caption-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+    transform: translateY(4px);
+  }
+
+  to {
+    clip-path: inset(0);
+    transform: translateY(0);
   }
 }
 
@@ -633,6 +706,28 @@ canvas {
   color: #e8d9b0;
 }
 
+.event-label.pulse {
+  animation: event-pulse 600ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@keyframes event-pulse {
+  0% {
+    transform: translateX(-50%) scale(1);
+    box-shadow: none;
+  }
+
+  45% {
+    transform: translateX(-50%) scale(1.25);
+    box-shadow: 0 0 18px rgba(217, 164, 65, 0.72);
+    color: #fff3c4;
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1);
+    box-shadow: none;
+  }
+}
+
 #hourLabels {
   position: absolute;
   left: 0;
@@ -690,5 +785,22 @@ canvas {
     padding: 1px 3px;
     font-size: 8px;
     letter-spacing: 0.02em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #introCut,
+  #introCut .intro-bg,
+  #introCut .intro-title,
+  #introCut .intro-kicker::after,
+  #caption.wipe .cap-title,
+  #caption.wipe .cap-body,
+  .event-label.pulse {
+    animation: none;
+    transition: none;
+  }
+
+  #clockBox .wakoku {
+    transition: none;
   }
 }

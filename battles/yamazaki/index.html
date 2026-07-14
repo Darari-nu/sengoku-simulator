@@ -9,6 +9,8 @@
   <meta property="og:description" content="天王山をめぐる短期決戦と明智軍の崩壊を3D俯瞰で読む。">
   <meta property="og:image" content="../../assets/ogp/sengoku-ogp.svg">
   <meta name="twitter:card" content="summary_large_image">
+  <link rel="manifest" href="../../manifest.webmanifest">
+  <meta name="theme-color" content="#0a0d11">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
@@ -92,17 +94,21 @@
         { t0: 17.8, t1: 19, from: [82, -44], to: [204, -12], color: 0x9fc5f0, head: 17, width: 10 },
         { t0: 18.1, t1: 19, from: [110, 8], to: [214, -4], color: 0x9fc5f0, head: 18, width: 11 }
       ],
+      effects: [
+        { type: "clash", t0: 16.7, t1: 18.3, at: [12, 8], radius: 48, rate: 9 }
+      ],
       captions: [
         { t: 15, title: "布陣", body: "羽柴軍は西、明智軍は東。天王山を見上げる山崎で対峙", focus: [0, 0], duration: 0.78 },
-        { t: 16, title: "天王山", body: "羽柴軍、天王山周辺へ圧力をかける", focus: [-80, -92], duration: 0.82 },
-        { t: 17, title: "攻勢", body: "秀吉本隊と中川隊、明智本隊へ迫る", focus: [20, 12], duration: 0.82 },
+        { t: 16, title: "天王山", body: "羽柴軍、天王山周辺へ圧力をかける", focus: [-80, -92], duration: 0.82, shot: { type: "crane", radius: 270, polar: 0.74, duration: 0.55, shake: 0.12 } },
+        { t: 17, title: "攻勢", body: "秀吉本隊と中川隊、明智本隊へ迫る", focus: [20, 12], duration: 0.82, shot: { type: "push", radius: 200, polar: 0.84, duration: 0.45, shake: 0.26 } },
         { t: 18, title: "崩れ", body: "明智右翼が崩れ、光秀本隊も東へ退く", focus: [104, -18], duration: 0.84 },
-        { t: 18.6, title: "敗走", body: "明智軍、勝竜寺城方面へ敗走する", focus: [176, -10], duration: 0.78 }
+        { t: 18.6, title: "敗走", body: "明智軍、勝竜寺城方面へ敗走する", focus: [176, -10], duration: 0.78, shot: { type: "pull", radius: 330, polar: 0.92, duration: 0.6, shake: 0.1 } }
       ],
       weather: { fogCount: 5, fogSize: 220, fogPeak: time => Math.max(0, Math.min(1, (19 - time) / 4)) * 0.08, fogOpacityScale: 0.05 },
       captionDuration: 0.82
     };
   </script>
   <script src="../../scripts/battle-sim.js"></script>
+  <script src="../../scripts/register-sw.js"></script>
 </body>
 </html>

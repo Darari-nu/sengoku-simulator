@@ -11,6 +11,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="../../manifest.webmanifest">
+<meta name="theme-color" content="#0a0d11">
 <style>
   :root{
     --ink:#0a0d11;
@@ -709,17 +711,27 @@ for(let i=0;i<7;i++){
   sp.scale.set(10,10,1);
   scene.add(sp);smokeSprites.push(sp);
 }
+const CLASH_EFFECTS=[
+ {t0:8.4,t1:13.6,at:[-88,20],radius:44},
+ {t0:12.0,t1:13.4,at:[-106,72],radius:34},
+ {t0:13.0,t1:14.3,at:[-132,-20],radius:38}
+];
+const clashSprites=[];
+for(let i=0;i<24;i++){
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:softTex,color:i%3===0?0xffd98a:0xb8a888,transparent:true,opacity:0,depthWrite:false}));
+  sp.scale.set(9,9,1);scene.add(sp);clashSprites.push(sp);
+}
 
 const CAPTIONS=[
- {t:8.0, title:'開戦',     body:'霧の晴れ間、井伊直政隊が抜け駆けの先制射撃', focus:[-70,35]},
- {t:8.5, title:'乱戦',     body:'福島正則隊と宇喜多秀家隊、中山道沿いで激突', focus:[-80,26]},
+ {t:8.0, title:'開戦',     body:'霧の晴れ間、井伊直政隊が抜け駆けの先制射撃', focus:[-70,35],shot:{radius:220,polar:.88}},
+ {t:8.5, title:'乱戦',     body:'福島正則隊と宇喜多秀家隊、中山道沿いで激突', focus:[-80,26],shot:{radius:190,polar:.82}},
  {t:10.0,title:'狼煙',     body:'三成、総攻撃の合図。だが松尾山も南宮山も動かず', focus:[-150,-140]},
  {t:11.0,title:'膠着',     body:'西軍やや優勢のまま、戦線は一進一退', focus:[-85,-10]},
- {t:12.0,title:'裏切り',   body:'小早川秀秋、一万五千が松尾山を駆け下り大谷隊へ', focus:[-120,112]},
+ {t:12.0,title:'裏切り',   body:'小早川秀秋、一万五千が松尾山を駆け下り大谷隊へ', focus:[-120,112],shot:{radius:210,polar:.78}},
  {t:12.7,title:'壊滅',     body:'大谷吉継隊、奮戦むなしく壊滅', focus:[-104,78]},
  {t:13.0,title:'総崩れ',   body:'小西・宇喜多も崩壊。家康、本陣を前進させる', focus:[-95,0]},
  {t:14.0,title:'島津の退き口', body:'島津義弘、千五百で敵中央を正面突破', focus:[-10,40]},
- {t:14.8,title:'決着',     body:'天下分け目の戦い、わずか半日で終わる', focus:[62,8]},
+ {t:14.8,title:'決着',     body:'天下分け目の戦い、わずか半日で終わる', focus:[62,8],shot:{radius:330,polar:.94}},
 ];
 const CAP_DUR=0.85;
 
@@ -750,7 +762,8 @@ function desiredCamera(H,dt){
     const cp=currentCaption(H)||CAPTIONS.reduce((a,c)=>H>=c.t?c:a,CAPTIONS[0]);
     const f=new THREE.Vector3(cp.focus[0],terrainH(cp.focus[0],cp.focus[1])+6,cp.focus[1]);
     cam.center.lerp(f,1-Math.exp(-dt*1.2));
-    const p=orbitPos(cam.center,cam.az,0.98,250);
+    const shot=cp.shot||{};
+    const p=orbitPos(cam.center,cam.az,shot.polar||0.98,shot.radius||250);
     return{p,t:cam.center.clone(),k:1.6};
   }
   const o=unitObjs[cam.unit];
@@ -981,6 +994,18 @@ function tick(){
     const sT=clamp((H-10.0)/0.7,0,1);
     sp.material.opacity=(1-ph)*0.5*Math.min(1,sT*3)*(H<10.55?1:(10.7-H)/0.15);
   });
+  clashSprites.forEach((sp,i)=>{
+    const effect=CLASH_EFFECTS[i%CLASH_EFFECTS.length];
+    if(H<effect.t0||H>effect.t1){sp.material.opacity=0;return;}
+    const phase=(performance.now()*0.0018+i*.37)%1;
+    const angle=i*2.4;
+    const r=(.25+phase*.75)*effect.radius;
+    const x=effect.at[0]+Math.cos(angle)*r;
+    const z=effect.at[1]+Math.sin(angle)*r*.55;
+    sp.position.set(x,terrainH(x,z)+3+phase*9,z);
+    sp.scale.setScalar(6+phase*14);
+    sp.material.opacity=(1-phase)*.38;
+  });
 
   for(const id in unitObjs){
     const o=unitObjs[id],u=o.u;
@@ -1063,5 +1088,6 @@ addEventListener('resize',()=>{
 });
 })();
 </script>
+<script src="../../scripts/register-sw.js"></script>
 </body>
 </html>

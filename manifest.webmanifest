@@ -1,0 +1,12 @@
+{
+  "name": "戦国合戦 3D絵巻",
+  "short_name": "戦国合戦",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a0d11",
+  "theme_color": "#0a0d11",
+  "icons": [
+    { "src": "assets/app/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/app/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

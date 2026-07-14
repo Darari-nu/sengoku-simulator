@@ -9,6 +9,8 @@
   <meta property="og:description" content="武田軍の圧迫と徳川軍の敗走を、台地と浜松城の位置関係から3D俯瞰で読む。">
   <meta property="og:image" content="../../assets/ogp/sengoku-ogp.svg">
   <meta name="twitter:card" content="summary_large_image">
+  <link rel="manifest" href="../../manifest.webmanifest">
+  <meta name="theme-color" content="#0a0d11">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
@@ -91,17 +93,21 @@
         { t0: 14.4, t1: 15.5, from: [172, 156], to: [36, 52], color: 0x9fc5f0, head: 18, width: 11 },
         { t0: 16.7, t1: 18.2, from: [42, 58], to: [184, 158], color: 0x9fc5f0, head: 22, width: 14 }
       ],
+      effects: [
+        { type: "clash", t0: 15.0, t1: 17.4, at: [26, 34], radius: 54, rate: 10 }
+      ],
       captions: [
         { t: 14, title: "進軍", body: "武田軍、三方ヶ原台地へ進む。徳川軍は浜松城方面から出る", focus: [0, 24], duration: 0.84 },
-        { t: 15, title: "接触", body: "徳川軍、野戦に出て武田軍と接触する", focus: [50, 52], duration: 0.82 },
-        { t: 16, title: "圧迫", body: "武田先鋒と山県隊、正面と側面から徳川軍を押す", focus: [18, 30], duration: 0.84 },
+        { t: 15, title: "接触", body: "徳川軍、野戦に出て武田軍と接触する", focus: [50, 52], duration: 0.82, shot: { type: "push", radius: 215, polar: 0.86, duration: 0.5, shake: 0.25 } },
+        { t: 16, title: "圧迫", body: "武田先鋒と山県隊、正面と側面から徳川軍を押す", focus: [18, 30], duration: 0.84, shot: { type: "crane", radius: 285, polar: 0.76, duration: 0.56, shake: 0.2 } },
         { t: 17, title: "崩れ", body: "徳川軍、持ちこたえられず浜松城方面へ向きを変える", focus: [88, 104], duration: 0.86 },
-        { t: 18, title: "敗走", body: "家康、浜松城へ敗走。武田軍が台地を制する", focus: [158, 146], duration: 0.82 }
+        { t: 18, title: "敗走", body: "家康、浜松城へ敗走。武田軍が台地を制する", focus: [158, 146], duration: 0.82, shot: { type: "pull", radius: 335, polar: 0.92, duration: 0.62, shake: 0.12 } }
       ],
       weather: { fogCount: 5, fogSize: 230, fogPeak: time => Math.max(0, Math.min(1, (18.2 - time) / 4.2)) * 0.1, fogOpacityScale: 0.06 },
       captionDuration: 0.84
     };
   </script>
   <script src="../../scripts/battle-sim.js"></script>
+  <script src="../../scripts/register-sw.js"></script>
 </body>
 </html>
